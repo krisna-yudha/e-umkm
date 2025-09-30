@@ -223,7 +223,7 @@ const cancelToggle = () => {
                                         </button>
                                         
                                         <small class="block text-gray-400 text-xs mt-1">
-                                            Ctrl+click untuk langsung toggle
+                                            
                                         </small>
                                     </td>
                                 </tr>
