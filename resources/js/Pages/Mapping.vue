@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 
 const props = defineProps<{
     umkms: Array<{
@@ -19,10 +19,264 @@ const props = defineProps<{
             name: string;
         };
     }>;
+    auth?: {
+        user?: {
+            id: number;
+            name: string;
+            email: string;
+            role: string;
+        };
+    };
 }>();
 
+// Dynamic home route based on user role
+const homeRoute = computed(() => {
+    if (props.auth?.user) {
+        if (props.auth.user.role === 'admin') {
+            return route('admin.dashboard');
+        } else {
+            return route('dashboard');
+        }
+    }
+    return route('home');
+});
+
 const mapContainer = ref<HTMLElement>();
+const searchQuery = ref('');
+const searchResults = ref<any[]>([]);
+const isSearching = ref(false);
+const showSearchResults = ref(false);
 let map: any = null;
+let searchTimeout: any = null;
+let userLocationMarker: any = null;
+
+const searchLocation = async (query: string) => {
+    if (!query.trim()) {
+        searchResults.value = [];
+        showSearchResults.value = false;
+        return;
+    }
+
+    isSearching.value = true;
+    
+    try {
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=id&addressdetails=1`
+        );
+        const data = await response.json();
+        
+        searchResults.value = data.filter((result: any) => result.lat && result.lon);
+        showSearchResults.value = true;
+    } catch (error) {
+        console.error('Error searching location:', error);
+        searchResults.value = [];
+    } finally {
+        isSearching.value = false;
+    }
+};
+
+const onSearchInput = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const query = target.value;
+    searchQuery.value = query;
+    
+    // Clear previous timeout
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+    
+    // Set new timeout for debouncing
+    searchTimeout = setTimeout(() => {
+        searchLocation(query);
+    }, 300);
+};
+
+const selectLocation = async (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    
+    // Update search query with selected location
+    searchQuery.value = result.display_name;
+    
+    // Hide search results
+    showSearchResults.value = false;
+    
+    // Move map to selected location with zoom
+    if (map) {
+        map.setView([lat, lng], 17);
+    }
+};
+
+const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                if (map) {
+                    // Zoom lebih dekat untuk detail yang lebih baik
+                    map.setView([lat, lng], 20);
+                    
+                    // Remove existing user location marker
+                    if (userLocationMarker) {
+                        map.removeLayer(userLocationMarker);
+                    }
+                    
+                    // Get address using reverse geocoding
+                    let addressInfo = 'Mengambil informasi alamat...';
+                    try {
+                        const response = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+                        );
+                        const data = await response.json();
+                        
+                        if (data && data.display_name) {
+                            // Extract meaningful address parts
+                            const address = data.address || {};
+                            const parts = [];
+                            
+                            if (address.road) parts.push(address.road);
+                            if (address.suburb || address.neighbourhood) parts.push(address.suburb || address.neighbourhood);
+                            if (address.city || address.town || address.village) parts.push(address.city || address.town || address.village);
+                            
+                            addressInfo = parts.length > 0 ? parts.join(', ') : data.display_name.split(',').slice(0, 3).join(', ');
+                        }
+                    } catch (error) {
+                        console.error('Error getting address:', error);
+                        addressInfo = 'Alamat tidak dapat diambil';
+                    }
+                    
+                    // Import Leaflet for marker creation
+                    const L = await import('leaflet');
+                    
+                    // Create enhanced custom user location icon
+                    const userIcon = L.default.divIcon({
+                        className: 'custom-user-marker',
+                        html: `
+                            <div class="relative">
+                                <div class="w-14 h-14 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center shadow-2xl border-4 border-white animate-pulse-green">
+                                    <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 4V6C15 7.66 13.66 9 12 9S9 7.66 9 6V4L3 7V9H21M12 10C14.67 10 17 11.33 17 13V16H7V13C7 11.33 9.33 10 12 10Z"/>
+                                    </svg>
+                                </div>
+                                <div class="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-8 border-transparent border-t-emerald-600"></div>
+                                <!-- Ripple effect -->
+                                <div class="absolute inset-0 w-14 h-14 rounded-full border-4 border-green-400 animate-ping opacity-30"></div>
+                            </div>
+                        `,
+                        iconSize: [56, 64],
+                        iconAnchor: [28, 64],
+                        popupAnchor: [0, -64]
+                    });
+                    
+                    // Add user location marker
+                    userLocationMarker = L.default.marker([lat, lng], { icon: userIcon }).addTo(map);
+                    
+                    // Enhanced popup with address and coordinates
+                    const popupContent = `
+                        <div class="max-w-sm">
+                            <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-t-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 4V6C15 7.66 13.66 9 12 9S9 7.66 9 6V4L3 7V9H21M12 10C14.67 10 17 11.33 17 13V16H7V13C7 11.33 9.33 10 12 10Z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-lg">🎯 Lokasi Anda</h3>
+                                        <p class="text-green-100 text-sm">Posisi saat ini</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-4 rounded-b-lg shadow-lg">
+                                <div class="space-y-3">
+                                    <div class="flex items-start space-x-3">
+                                        <svg class="w-4 h-4 text-gray-400 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        <div class="flex-1">
+                                            <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Alamat</p>
+                                            <p class="text-sm text-gray-800 font-medium leading-relaxed">${addressInfo}</p>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-gray-100 pt-3">
+                                        <div class="flex items-start space-x-3">
+                                            <svg class="w-4 h-4 text-gray-400 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                                            </svg>
+                                            <div class="flex-1">
+                                                <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Koordinat</p>
+                                                <div class="bg-gray-50 rounded-lg p-2 font-mono text-xs">
+                                                    <div class="flex justify-between items-center mb-1">
+                                                        <span class="text-gray-600">Lat:</span>
+                                                        <span class="text-gray-800 font-semibold">${lat.toFixed(6)}</span>
+                                                    </div>
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-gray-600">Lng:</span>
+                                                        <span class="text-gray-800 font-semibold">${lng.toFixed(6)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="border-t border-gray-100 pt-3">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs text-gray-500">Akurasi lokasi</span>
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
+                                                ${position.coords.accuracy ? Math.round(position.coords.accuracy) + 'm' : 'Tersedia'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add popup with enhanced styling
+                    userLocationMarker.bindPopup(popupContent, {
+                        maxWidth: 320,
+                        className: 'custom-user-popup'
+                    }).openPopup();
+                    
+                    // Enhanced tooltip
+                    userLocationMarker.bindTooltip('🎯 Lokasi Anda', {
+                        permanent: false,
+                        direction: 'top',
+                        className: 'custom-user-tooltip'
+                    });
+                }
+            },
+            (error) => {
+                console.error('Error getting location:', error);
+                let errorMessage = 'Tidak dapat mengambil lokasi. ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Izin lokasi ditolak. Mohon berikan izin akses lokasi.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Informasi lokasi tidak tersedia.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Waktu permintaan lokasi habis.';
+                        break;
+                    default:
+                        errorMessage += 'Terjadi kesalahan yang tidak diketahui.';
+                        break;
+                }
+                alert(errorMessage);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000
+            }
+        );
+    } else {
+        alert('Geolocation tidak didukung oleh browser ini.');
+    }
+};
 
 onMounted(async () => {
     try {
@@ -47,9 +301,10 @@ onMounted(async () => {
         L.Marker.prototype.options.icon = DefaultIcon;
 
         // Initialize map with comprehensive options for dragging
+        // Set default view to Semarang, Central Java, Indonesia
         map = L.map(mapContainer.value!, {
-            center: [-6.2088, 106.8456],
-            zoom: 11,
+            center: [-6.9664, 110.4204], // Semarang coordinates
+            zoom: 15, // Closer zoom level for better detail
             zoomControl: true,
             dragging: true,
             touchZoom: true,
@@ -66,13 +321,13 @@ onMounted(async () => {
             worldCopyJump: false,
             maxBounds: undefined,
             minZoom: 2,
-            maxZoom: 20
+            maxZoom: 25
         });
 
         // Add tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 20,
+            maxZoom: 25,
             minZoom: 3,
             tileSize: 256,
             zoomOffset: 0,
@@ -101,34 +356,64 @@ onMounted(async () => {
             console.log('Map dragging enabled:', map.dragging.enabled());
         }, 1000);
 
-        // Create custom icon for UMKM
-        const umkmIcon = L.divIcon({
-            className: 'custom-umkm-marker',
-            html: `
-                <div class="relative">
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                        </svg>
+        // Function to create custom UMKM icon with profile image
+        const createUmkmIcon = (umkm: any) => {
+            const hasImage = umkm.gambar && umkm.gambar.trim() !== '';
+            
+            return L.divIcon({
+                className: 'custom-umkm-marker',
+                html: `
+                    <div class="relative group">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-xl border-3 border-white overflow-hidden">
+                            ${hasImage ? 
+                                `<img src="/storage/${umkm.gambar}" alt="${umkm.nama_umkm}" class="w-full h-full object-cover rounded-full" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>` :
+                                ''
+                            }
+                            <div class="${hasImage ? 'hidden' : 'flex'} w-full h-full items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-3 border-r-3 border-t-6 border-transparent border-t-purple-600"></div>
+                        
+                        <!-- UMKM Name Label -->
+                        <div class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                            <div class="bg-white text-gray-800 text-xs font-semibold px-2 py-1 rounded-md shadow-lg border border-gray-200 max-w-32 truncate">
+                                ${umkm.nama_umkm}
+                            </div>
+                        </div>
                     </div>
-                    <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-purple-600"></div>
-                </div>
-            `,
-            iconSize: [32, 40],
-            iconAnchor: [16, 40],
-            popupAnchor: [0, -40]
-        });
+                `,
+                iconSize: [48, 56],
+                iconAnchor: [24, 56],
+                popupAnchor: [0, -56]
+            });
+        };
 
         // Add markers for each UMKM
         props.umkms.forEach(umkm => {
             if (umkm.latitude && umkm.longitude) {
-                const marker = L.marker([umkm.latitude, umkm.longitude], { icon: umkmIcon }).addTo(map);
+                const customIcon = createUmkmIcon(umkm);
+                const marker = L.marker([umkm.latitude, umkm.longitude], { icon: customIcon }).addTo(map);
                 
                 const popupContent = `
                     <div class="max-w-sm">
                         <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-t-lg">
-                            <h3 class="font-bold text-lg mb-1">${umkm.nama_umkm}</h3>
-                            <p class="text-blue-100 text-sm">👤 ${umkm.user.name}</p>
+                            <div class="flex items-center space-x-3">
+                                ${umkm.gambar ? 
+                                    `<img src="/storage/${umkm.gambar}" alt="${umkm.nama_umkm}" class="w-10 h-10 rounded-full border-2 border-white object-cover" onerror="this.style.display='none'"/>` :
+                                    `<div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                        </svg>
+                                    </div>`
+                                }
+                                <div>
+                                    <h3 class="font-bold text-lg mb-1">${umkm.nama_umkm}</h3>
+                                    <p class="text-blue-100 text-sm">👤 ${umkm.user.name}</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="bg-white p-4 rounded-b-lg shadow-lg">
                             <div class="flex items-center mb-2">
@@ -178,22 +463,47 @@ onMounted(async () => {
             }
         });
 
-        // Fit map to show all markers
+        // Set map view based on UMKM locations or default to Semarang
         if (props.umkms.length > 0) {
             const validUmkms = props.umkms.filter(umkm => umkm.latitude && umkm.longitude);
             
             if (validUmkms.length > 0) {
-                const group = new L.FeatureGroup(
-                    validUmkms.map(umkm => L.marker([umkm.latitude, umkm.longitude]))
+                // Check if UMKM are in Semarang area (rough bounds)
+                const semarangUmkms = validUmkms.filter(umkm => 
+                    umkm.latitude >= -7.1 && umkm.latitude <= -6.8 && 
+                    umkm.longitude >= 110.2 && umkm.longitude <= 110.6
                 );
                 
-                if (group.getLayers().length > 1) {
+                if (semarangUmkms.length > 0) {
+                    // If there are UMKM in Semarang area, focus on them
+                    if (semarangUmkms.length > 1) {
+                        const group = new L.FeatureGroup(
+                            semarangUmkms.map(umkm => L.marker([umkm.latitude, umkm.longitude]))
+                        );
+                        map.fitBounds(group.getBounds().pad(0.15));
+                    } else {
+                        // Single UMKM in Semarang
+                        const umkm = semarangUmkms[0];
+                        map.setView([umkm.latitude, umkm.longitude], 17);
+                    }
+                } else if (validUmkms.length > 1) {
+                    // UMKM outside Semarang, show all
+                    const group = new L.FeatureGroup(
+                        validUmkms.map(umkm => L.marker([umkm.latitude, umkm.longitude]))
+                    );
                     map.fitBounds(group.getBounds().pad(0.1));
-                } else if (group.getLayers().length === 1) {
+                } else {
+                    // Single UMKM outside Semarang
                     const umkm = validUmkms[0];
-                    map.setView([umkm.latitude, umkm.longitude], 15);
+                    map.setView([umkm.latitude, umkm.longitude], 17);
                 }
+            } else {
+                // No valid UMKM coordinates, stay focused on Semarang
+                map.setView([-6.9664, 110.4204], 15);
             }
+        } else {
+            // No UMKM data, stay focused on Semarang
+            map.setView([-6.9664, 110.4204], 15);
         }
         
         // Add event listeners to debug dragging
@@ -215,6 +525,16 @@ onMounted(async () => {
         
         // Final check
         console.log('Map initialized with dragging:', map.dragging ? map.dragging.enabled() : 'dragging object not found');
+        console.log('Map centered on Semarang:', [-6.9664, 110.4204]);
+        
+        // Close search results when clicking outside
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const searchContainer = document.getElementById('location-search-mapping')?.closest('.relative');
+            if (searchContainer && !searchContainer.contains(target)) {
+                showSearchResults.value = false;
+            }
+        });
         
     } catch (error) {
         console.error('Error initializing map:', error);
@@ -238,13 +558,13 @@ onMounted(async () => {
                             </div>
                             <div class="flex flex-col sm:flex-row gap-3">
                                 <Link 
-                                    :href="route('home')"
+                                    :href="homeRoute"
                                     class="inline-flex items-center justify-center px-6 py-3 bg-white/20 border border-white/30 rounded-xl font-semibold text-sm text-white tracking-wide hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
                                 >
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                                     </svg>
-                                    Kembali ke Beranda
+                                    {{ auth?.user ? (auth.user.role === 'admin' ? 'Kembali ke Admin' : 'Kembali ke Dashboard') : 'Kembali ke Beranda' }}
                                 </Link>
                                 <Link 
                                     :href="route('public.umkm.list')"
@@ -273,21 +593,88 @@ onMounted(async () => {
                     </div>
 
                     <div v-else>
-                        <!-- Map Info Bar -->
-                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-400 p-4">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
+                        <!-- Compact Search Bar -->
+                        <div class="bg-white border-b border-gray-200 px-4 py-3">
+                            <div class="flex items-center justify-between max-w-6xl mx-auto">
+                                <!-- Search Input -->
+                                <div class="flex-1 max-w-md relative">
+                                    <div class="relative">
+                                        <input
+                                            id="location-search-mapping"
+                                            type="text"
+                                            class="block w-full pl-10 pr-10 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white placeholder-gray-400"
+                                            v-model="searchQuery"
+                                            @input="onSearchInput"
+                                            @focus="showSearchResults = searchResults.length > 0"
+                                            placeholder="Cari lokasi..."
+                                        />
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                            </svg>
+                                        </div>
+                                        <div v-if="isSearching" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                            <svg class="animate-spin h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Compact Search Results -->
+                                    <div v-if="showSearchResults && searchResults.length > 0" 
+                                         class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg py-1 text-sm overflow-auto border border-gray-200">
+                                        <div v-for="result in searchResults" 
+                                             :key="result.place_id"
+                                             @click="selectLocation(result)"
+                                             class="cursor-pointer select-none relative py-2 px-3 hover:bg-blue-50 hover:text-blue-600 border-b border-gray-50 last:border-b-0">
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="h-4 w-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                </svg>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                                        {{ result.display_name.split(',')[0] }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-500 truncate">
+                                                        {{ result.display_name.split(',').slice(1, 3).join(',') }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="ml-3 flex-1">
-                                    <p class="text-sm text-green-700">
-                                        <span class="font-semibold">{{ umkms.length }} UMKM</span> ditampilkan di peta. 
-                                        Klik pada marker biru untuk melihat detail UMKM, atau arahkan kursor untuk melihat nama UMKM.
-                                    </p>
+
+                                <!-- Action Buttons -->
+                                <div class="flex items-center space-x-3 ml-4">
+                                    <button
+                                        type="button"
+                                        @click="getCurrentLocation"
+                                        class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                                        title="Gunakan lokasi saat ini"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        </svg>
+                                        <span class="ml-1 hidden sm:inline">Lokasi Saya</span>
+                                    </button>
+                                    
+                                    <!-- UMKM Counter Badge -->
+                                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-sm">
+                                        <span class="hidden sm:inline">📍 </span>{{ umkms.length }} UMKM
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Quick Instructions -->
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-3">
+                            <p class="text-sm text-blue-700 flex items-center">
+                                <svg class="h-4 w-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Klik marker untuk detail UMKM atau gunakan pencarian untuk navigasi cepat.
+                            </p>
                         </div>
                         
                         <!-- Map -->
@@ -433,6 +820,78 @@ onMounted(async () => {
     pointer-events: auto !important;
 }
 
+/* User location marker styling */
+.custom-user-marker {
+    background: transparent !important;
+    border: none !important;
+    pointer-events: auto !important;
+}
+
+/* User location popup styling */
+.custom-user-popup .leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    pointer-events: auto !important;
+    background: white;
+}
+
+.custom-user-popup .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+    pointer-events: auto !important;
+}
+
+.custom-user-popup .leaflet-popup-tip {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+}
+
+/* User location tooltip styling */
+.custom-user-tooltip {
+    background: rgba(16, 185, 129, 0.95) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    pointer-events: none !important;
+}
+
+.custom-user-tooltip::before {
+    border-top-color: rgba(16, 185, 129, 0.95) !important;
+}
+
+/* Enhanced UMKM marker styling */
+.custom-umkm-marker img {
+    transition: transform 0.2s ease-in-out;
+}
+
+.custom-umkm-marker:hover img {
+    transform: scale(1.1);
+}
+
+/* UMKM name label styling */
+.custom-umkm-marker .group:hover > div:last-child {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    transition: all 0.2s ease-in-out;
+}
+
+/* Animation for user location marker */
+@keyframes pulse-green {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.1;
+    }
+}
+
 /* Popup styling */
 .custom-popup .leaflet-popup-content-wrapper {
     border-radius: 12px;
@@ -480,6 +939,29 @@ onMounted(async () => {
 
 .leaflet-tile {
     pointer-events: none !important;
+}
+
+/* Semarang marker styling */
+.custom-semarang-marker {
+    background: transparent !important;
+    border: none !important;
+    pointer-events: auto !important;
+}
+
+.custom-tooltip-semarang {
+    background: rgba(239, 68, 68, 0.95) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    pointer-events: none !important;
+}
+
+.custom-tooltip-semarang::before {
+    border-top-color: rgba(239, 68, 68, 0.95) !important;
 }
 
 /* Fix for mobile touch events */

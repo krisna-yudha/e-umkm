@@ -52,6 +52,22 @@ const showingNavigationDropdown = ref(false);
                                                 type="button"
                                                 class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
                                             >
+                                                <!-- Profile Photo -->
+                                                <img
+                                                    v-if="($page.props.auth.user as any).profile_photo"
+                                                    :src="`/storage/${($page.props.auth.user as any).profile_photo}`"
+                                                    :alt="$page.props.auth.user.name"
+                                                    class="h-8 w-8 rounded-full object-cover mr-2 border border-gray-200"
+                                                />
+                                                <div
+                                                    v-else
+                                                    class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center mr-2 border border-gray-200"
+                                                >
+                                                    <svg class="h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                                    </svg>
+                                                </div>
+                                                
                                                 {{ $page.props.auth.user.name }}
 
                                                 <svg
@@ -71,17 +87,37 @@ const showingNavigationDropdown = ref(false);
                                     </template>
 
                                     <template #content>
+                                        <!-- Admin Menu -->
+                                        <template v-if="($page.props.auth.user as any).role === 'admin'">
+                                            <DropdownLink
+                                                :href="route('admin.dashboard')"
+                                            >
+                                                🏛️ Admin Dashboard
+                                            </DropdownLink>
+                                            <DropdownLink
+                                                :href="route('admin.umkm')"
+                                            >
+                                                🏢 Kelola UMKM
+                                            </DropdownLink>
+                                            <DropdownLink
+                                                :href="route('admin.reports')"
+                                            >
+                                                📊 Laporan
+                                            </DropdownLink>
+                                            <div class="border-t border-gray-100"></div>
+                                        </template>
+                                        
                                         <DropdownLink
-                                            :href="route('profile.edit')"
+                                            :href="route('help')"
                                         >
-                                            Profile
+                                            ❓ Help
                                         </DropdownLink>
                                         <DropdownLink
                                             :href="route('logout')"
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            🚪 Log Out
                                         </DropdownLink>
                                     </template>
                                 </Dropdown>
@@ -164,15 +200,18 @@ const showingNavigationDropdown = ref(false);
                         </div>
 
                         <div class="mt-3 space-y-1">
+                            <ResponsiveNavLink :href="route('user.profile')">
+                                👤 Dashboard Profil
+                            </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('profile.edit')">
-                                Profile
+                                ⚙️ Edit Profil
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 :href="route('logout')"
                                 method="post"
                                 as="button"
                             >
-                                Log Out
+                                🚪 Log Out
                             </ResponsiveNavLink>
                         </div>
                     </div>

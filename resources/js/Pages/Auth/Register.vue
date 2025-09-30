@@ -11,7 +11,7 @@ const form = useForm({
     email: '',
     password: '',
     password_confirmation: '',
-    role: 'user',
+    role: 'umkm',
 });
 
 const submit = () => {
@@ -104,19 +104,7 @@ const submit = () => {
                         <InputError class="mt-2" :message="form.errors.password_confirmation" />
                     </div>
 
-                    <div>
-                        <InputLabel for="role" value="Daftar sebagai" class="text-white font-semibold" />
-                        <select
-                            id="role"
-                            class="mt-2 block w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm"
-                            v-model="form.role"
-                            required
-                        >
-                            <option value="user" class="bg-gray-800 text-white">User (Pencari UMKM)</option>
-                            <option value="umkm" class="bg-gray-800 text-white">Pelaku UMKM</option>
-                        </select>
-                        <InputError class="mt-2" :message="form.errors.role" />
-                    </div>
+                    <!-- Role is hidden and defaults to 'umkm' -->
 
                     <div class="space-y-4">
                         <button

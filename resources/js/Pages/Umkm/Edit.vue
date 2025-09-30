@@ -7,40 +7,64 @@ import TextInput from '@/Components/TextInput.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 
+interface Umkm {
+    id: number;
+    nama_umkm: string;
+    deskripsi: string;
+    kategori: string;
+    alamat: string;
+    no_telepon: string;
+    email: string;
+    latitude: number;
+    longitude: number;
+    gambar: string;
+    status: string;
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    whatsapp?: string;
+    website?: string;
+}
+
+const props = defineProps<{
+    umkm: Umkm;
+}>();
+
 const form = useForm({
-    nama_umkm: '',
-    deskripsi: '',
-    kategori: '',
-    alamat: '',
-    no_telepon: '',
-    email: '',
-    latitude: '',
-    longitude: '',
+    nama_umkm: props.umkm.nama_umkm || '',
+    deskripsi: props.umkm.deskripsi || '',
+    kategori: props.umkm.kategori || '',
+    alamat: props.umkm.alamat || '',
+    no_telepon: props.umkm.no_telepon || '',
+    email: props.umkm.email || '',
+    latitude: props.umkm.latitude?.toString() || '',
+    longitude: props.umkm.longitude?.toString() || '',
     gambar: null as File | null,
-    facebook: '',
-    instagram: '',
-    twitter: '',
-    whatsapp: '',
-    website: '',
+    facebook: props.umkm.facebook || '',
+    instagram: props.umkm.instagram || '',
+    twitter: props.umkm.twitter || '',
+    whatsapp: props.umkm.whatsapp || '',
+    website: props.umkm.website || '',
 });
 
 const mapContainer = ref<HTMLElement>();
-const currentLocationMarker = ref<any>(null);
 const searchQuery = ref('');
 const searchResults = ref<any[]>([]);
 const isSearching = ref(false);
 const showSearchResults = ref(false);
 let map: any = null;
+let currentLocationMarker: any = null;
 let searchTimeout: any = null;
 
 const submit = () => {
-    // Simple and reliable form submission
+    // Use forceFormData only when there's a file upload
     if (form.gambar && form.gambar instanceof File) {
-        form.post(route('umkm.store'), {
-            forceFormData: true,
+        form.put(route('umkm.update', props.umkm.id), {
+            forceFormData: true
         });
     } else {
-        form.post(route('umkm.store'));
+        // For regular updates without file, use normal PUT
+        form.put(route('umkm.update', props.umkm.id));
     }
 };
 
@@ -64,16 +88,15 @@ const getCurrentLocation = () => {
                 if (map) {
                     map.setView([lat, lng], 15);
                     
-                    if (currentLocationMarker.value) {
-                        map.removeLayer(currentLocationMarker.value);
+                    if (currentLocationMarker) {
+                        map.removeLayer(currentLocationMarker);
                     }
                     
-                    // Dynamic import for L
-                    import('leaflet').then(({ default: L }) => {
-                        currentLocationMarker.value = L.marker([lat, lng]).addTo(map)
-                            .bindPopup('Lokasi UMKM Anda')
-                            .openPopup();
-                    });
+                    const L = window.L;
+                    currentLocationMarker = L.marker([lat, lng])
+                        .addTo(map)
+                        .bindPopup('Lokasi UMKM Anda')
+                        .openPopup();
                 }
             },
             (error) => {
@@ -146,110 +169,149 @@ const selectLocation = async (result: any) => {
         map.setView([lat, lng], 15);
         
         // Remove existing marker
-        if (currentLocationMarker.value) {
-            map.removeLayer(currentLocationMarker.value);
+        if (currentLocationMarker) {
+            map.removeLayer(currentLocationMarker);
         }
         
         // Add new marker
-        const L = await import('leaflet');
-        currentLocationMarker.value = L.default.marker([lat, lng]).addTo(map)
+        const L = window.L;
+        currentLocationMarker = L.marker([lat, lng])
+            .addTo(map)
             .bindPopup(result.display_name)
             .openPopup();
     }
 };
 
 const setMarkerOnMap = (lat: number, lng: number, popupText: string) => {
-    import('leaflet').then(({ default: L }) => {
-        if (currentLocationMarker.value) {
-            map.removeLayer(currentLocationMarker.value);
-        }
-        
-        currentLocationMarker.value = L.marker([lat, lng]).addTo(map)
-            .bindPopup(popupText)
-            .openPopup();
-    });
+    if (currentLocationMarker) {
+        map.removeLayer(currentLocationMarker);
+    }
+    
+    const L = window.L;
+    currentLocationMarker = L.marker([lat, lng])
+        .addTo(map)
+        .bindPopup(popupText)
+        .openPopup();
 };
 
 onMounted(async () => {
-    // Import Leaflet dynamically
-    const L = await import('leaflet');
-    
-    // Fix for default markers
-    const iconRetinaUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png';
-    const iconUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png';
-    const shadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png';
-    
-    const DefaultIcon = L.default.icon({
-        iconRetinaUrl,
-        iconUrl,
-        shadowUrl,
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-    });
-    
-    L.default.Marker.prototype.options.icon = DefaultIcon;
-
-    // Initialize map centered on Semarang
-    map = L.default.map(mapContainer.value!).setView([-6.9664, 110.4204], 13); // Semarang coordinates
-
-    // Add tile layer
-    L.default.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Add click event to map
-    map.on('click', async (e: any) => {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
+    try {
+        const L = await import('leaflet');
+        (window as any).L = L.default;
         
-        form.latitude = lat.toString();
-        form.longitude = lng.toString();
+        // Fix for default markers
+        const iconRetinaUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png';
+        const iconUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png';
+        const shadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png';
         
-        // Try to get address from coordinates (reverse geocoding)
-        try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
-            );
-            const data = await response.json();
-            if (data.display_name) {
-                searchQuery.value = data.display_name;
+        const DefaultIcon = L.default.icon({
+            iconRetinaUrl,
+            iconUrl,
+            shadowUrl,
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+        
+        L.default.Marker.prototype.options.icon = DefaultIcon;
+
+        // Initialize map with existing coordinates or default to Semarang
+        const lat = props.umkm.latitude || -6.9664;
+        const lng = props.umkm.longitude || 110.4204;
+        
+        map = L.default.map(mapContainer.value!).setView([lat, lng], 13);
+
+        // Add tile layer
+        L.default.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // If coordinates exist, get address and set search query
+        if (props.umkm.latitude && props.umkm.longitude) {
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${props.umkm.latitude}&lon=${props.umkm.longitude}&addressdetails=1`
+                );
+                const data = await response.json();
+                if (data.display_name) {
+                    searchQuery.value = data.display_name;
+                }
+            } catch (error) {
+                console.error('Error getting address:', error);
+                // Fallback to alamat field if available
+                searchQuery.value = props.umkm.alamat || '';
             }
-        } catch (error) {
-            console.error('Error getting address:', error);
-        }
-        
-        setMarkerOnMap(lat, lng, `Lokasi UMKM: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-    });
 
-    // Close search results when clicking outside
-    document.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        const searchContainer = document.getElementById('location-search')?.closest('.relative');
-        if (searchContainer && !searchContainer.contains(target)) {
-            showSearchResults.value = false;
+            currentLocationMarker = L.default.marker([props.umkm.latitude, props.umkm.longitude])
+                .addTo(map)
+                .bindPopup(props.umkm.nama_umkm)
+                .openPopup();
+        } else {
+            // Set search query to alamat if no coordinates
+            searchQuery.value = props.umkm.alamat || '';
         }
-    });
+
+        // Add click handler for map
+        map.on('click', async (e: any) => {
+            const { lat, lng } = e.latlng;
+            form.latitude = lat.toString();
+            form.longitude = lng.toString();
+            
+            // Try to get address from coordinates (reverse geocoding)
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+                );
+                const data = await response.json();
+                if (data.display_name) {
+                    searchQuery.value = data.display_name;
+                }
+            } catch (error) {
+                console.error('Error getting address:', error);
+            }
+            
+            setMarkerOnMap(lat, lng, `Lokasi UMKM: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        });
+
+        // Close search results when clicking outside
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const searchContainer = document.getElementById('location-search-edit')?.closest('.relative');
+            if (searchContainer && !searchContainer.contains(target)) {
+                showSearchResults.value = false;
+            }
+        });
+    } catch (error) {
+        console.error('Error loading map:', error);
+    }
 });
 </script>
 
 <template>
-    <Head title="Tambah UMKM" />
+    <Head title="Edit UMKM" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Tambah UMKM Baru
-            </h2>
+            <div class="flex items-center justify-between">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Edit UMKM
+                </h2>
+                <Link
+                    :href="route('umkm.index')"
+                    class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                >
+                    Kembali ke Daftar
+                </Link>
+            </div>
         </template>
 
         <div class="py-12">
-            <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <form @submit.prevent="submit" enctype="multipart/form-data">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-6 text-gray-900">
+                        <form @submit.prevent="submit">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 <!-- Left Column -->
                                 <div class="space-y-6">
                                     <div>
@@ -260,7 +322,6 @@ onMounted(async () => {
                                             class="mt-1 block w-full"
                                             v-model="form.nama_umkm"
                                             required
-                                            autofocus
                                         />
                                         <InputError class="mt-2" :message="form.errors.nama_umkm" />
                                     </div>
@@ -346,7 +407,7 @@ onMounted(async () => {
                                             accept="image/*"
                                             @change="handleImageChange"
                                         />
-                                        <p class="mt-1 text-sm text-gray-500">PNG, JPG, GIF hingga 2MB</p>
+                                        <p class="mt-1 text-sm text-gray-500">PNG, JPG, GIF hingga 2MB. Kosongkan jika tidak ingin mengubah gambar.</p>
                                         <InputError class="mt-2" :message="form.errors.gambar" />
                                     </div>
 
@@ -441,7 +502,7 @@ onMounted(async () => {
                                         <div class="mt-2 relative">
                                             <div class="relative">
                                                 <TextInput
-                                                    id="location-search"
+                                                    id="location-search-edit"
                                                     type="text"
                                                     class="block w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     v-model="searchQuery"
@@ -520,31 +581,24 @@ onMounted(async () => {
                                 </div>
                             </div>
 
-                            <!-- Map -->
-                            <div class="mt-6">
-                                <InputLabel value="Pilih Lokasi di Peta" />
-                                <p class="text-sm text-gray-500 mb-2">Klik pada peta untuk menandai lokasi UMKM Anda</p>
-                                <div 
-                                    ref="mapContainer" 
-                                    class="w-full h-64 rounded-lg shadow-inner border"
-                                ></div>
+                            <!-- Map Section -->
+                            <div class="mt-8">
+                                <h3 class="text-lg font-medium text-gray-900 mb-4">📍 Pilih Lokasi di Peta</h3>
+                                <p class="text-sm text-gray-600 mb-4">Klik pada peta untuk menandai lokasi UMKM Anda</p>
+                                <div ref="mapContainer" class="h-64 w-full rounded-lg border border-gray-300"></div>
                             </div>
 
-                            <!-- Submit Button -->
-                            <div class="flex items-center justify-end mt-6 space-x-4">
+                            <div class="flex items-center justify-between mt-8">
                                 <Link
                                     :href="route('umkm.index')"
-                                    class="inline-flex items-center px-4 py-2 bg-gray-300 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-400 focus:bg-gray-400 active:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                    class="inline-flex items-center px-4 py-2 bg-gray-300 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-400 focus:bg-gray-400 active:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150"
                                 >
                                     Batal
                                 </Link>
-
-                                <PrimaryButton 
-                                    class="ms-4" 
-                                    :class="{ 'opacity-25': form.processing }"
-                                    :disabled="form.processing"
-                                >
-                                    Simpan UMKM
+                                
+                                <PrimaryButton class="ms-4" :disabled="form.processing">
+                                    <span v-if="form.processing">Menyimpan...</span>
+                                    <span v-else>Perbarui UMKM</span>
                                 </PrimaryButton>
                             </div>
                         </form>
@@ -555,6 +609,6 @@ onMounted(async () => {
     </AuthenticatedLayout>
 </template>
 
-<style>
+<style scoped>
 @import 'leaflet/dist/leaflet.css';
 </style>
