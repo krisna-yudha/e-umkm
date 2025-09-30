@@ -18,6 +18,8 @@
 
 </div>
 
+---
+
 ## 📖 Tentang Proyek
 
 **E-UMKM Management System** adalah platform digital yang dirancang khusus untuk membantu pengelolaan Usaha Mikro, Kecil, dan Menengah (UMKM) di Indonesia. Sistem ini menyediakan solusi terintegrasi untuk manajemen bisnis, pemetaan lokasi, dan analitik komprehensif.
@@ -59,6 +61,8 @@
 - ✅ **Secure File Upload** - Validasi dan enkripsi file
 - ✅ **CSRF Protection** - Proteksi dari serangan CSRF
 
+---
+
 ## 🛠️ Tech Stack
 
 ### Backend
@@ -81,16 +85,18 @@
 - **Testing**: Postman Collection
 - **Maps**: Leaflet.js
 
+---
+
 ## 🚀 Quick Start
 
-### Prerequisites
+### Prasyarat
 
 - PHP 8.2 atau lebih tinggi
 - Composer
 - Node.js 18+ & NPM
 - SQLite/MySQL
 
-### Installation
+### Instalasi
 
 1. **Clone Repository**
    ```bash
@@ -145,6 +151,8 @@
 
    Akses aplikasi di: `http://127.0.0.1:8000`
 
+---
+
 ## 📡 API Documentation
 
 ### Base URL
@@ -160,14 +168,14 @@ Authorization: Bearer {your-token}
 
 ### Endpoints Overview
 
-| Category | Endpoints | Description |
-|----------|-----------|-------------|
-| **Auth** | `/v1/auth/*` | Authentication & user management |
-| **UMKM** | `/v1/umkm/*` | UMKM CRUD operations & search |
-| **Menu** | `/v1/menus/*` | Menu/product management |
-| **Utils** | `/health`, `/user` | Utility endpoints |
+| Category | Endpoints         | Description                       |
+|----------|-------------------|-----------------------------------|
+| **Auth** | `/v1/auth/*`      | Authentication & user management  |
+| **UMKM** | `/v1/umkm/*`      | UMKM CRUD operations & search     |
+| **Menu** | `/v1/menus/*`     | Menu/product management           |
+| **Utils**| `/health`, `/user`| Utility endpoints                 |
 
-### Quick API Test
+#### Quick API Test
 ```bash
 # Health check
 curl -X GET "http://127.0.0.1:8000/api/health"
@@ -181,8 +189,10 @@ curl -X POST "http://127.0.0.1:8000/api/v1/auth/register" \
   -d '{"name":"Test User","email":"test@example.com","password":"password123","password_confirmation":"password123"}'
 ```
 
-### Postman Collection
+#### Postman Collection
 Import file `E-UMKM-API.postman_collection.json` untuk testing lengkap.
+
+---
 
 ## 📁 Project Structure
 
@@ -213,6 +223,8 @@ e-umkm-backendV1/
 └── public/                   # Static Assets
 ```
 
+---
+
 ## 🎨 Screenshots
 
 ### Dashboard Admin
@@ -229,6 +241,8 @@ e-umkm-backendV1/
 - **UMKM Directory**: Direktori publik UMKM
 - **Search & Filter**: Pencarian dengan berbagai filter
 - **Detail View**: Informasi lengkap UMKM dan menu
+
+---
 
 ## 🧪 Testing
 
@@ -259,6 +273,8 @@ php artisan serve
 # 4. Menu operations
 ```
 
+---
+
 ## 📊 Database Schema
 
 ### Core Tables
@@ -271,6 +287,8 @@ php artisan serve
 - User `hasMany` Umkm
 - Umkm `hasMany` UmkmMenu
 - User `hasMany` PersonalAccessToken
+
+---
 
 ## 🤝 Contributing
 
@@ -286,9 +304,13 @@ php artisan serve
 - Add tests for new features
 - Update documentation
 
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
 
 ## 🙏 Acknowledgments
 
@@ -297,6 +319,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Inertia.js** - Modern monolith architecture
 - **Tailwind CSS** - Utility-first CSS framework
 - **Leaflet** - Open-source mapping library
+
+---
 
 ## 📞 Support
 
@@ -313,6 +337,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ⭐ **Star this repo if you find it helpful!** ⭐
 
 </div>
+
+---
 
 ## About Laravel
 
@@ -366,6 +392,3 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-#   e - u m k m 
- 
- 
