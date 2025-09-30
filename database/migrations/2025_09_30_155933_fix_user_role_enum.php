@@ -12,9 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('umkm', 'admin', 'user') DEFAULT 'user'");
-        });
+        // Fix the role enum to include all needed values
+        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('umkm', 'admin', 'user') DEFAULT 'user'");
     }
 
     /**
@@ -22,8 +21,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('umkm') DEFAULT 'umkm'");
-        });
+        // Revert back to the previous enum
+        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('umkm', 'admin') DEFAULT 'umkm'");
     }
 };
