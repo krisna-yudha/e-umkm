@@ -29,12 +29,29 @@ const toggleStatus = (umkm: any) => {
     showModal.value = true;
 };
 
+const directToggle = (umkm: any) => {
+    router.post(route('admin.umkm.toggle', umkm.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            // Success handled by page reload
+        },
+        onError: (errors) => {
+            console.error('Toggle error:', errors);
+        }
+    });
+};
+
 const confirmToggle = () => {
     if (selectedUmkm.value) {
-        router.post(route('admin.umkm.toggle-status', selectedUmkm.value.id), {}, {
+        router.post(route('admin.umkm.toggle', selectedUmkm.value.id), {}, {
+            preserveScroll: true,
             onSuccess: () => {
                 showModal.value = false;
                 selectedUmkm.value = null;
+            },
+            onError: (errors) => {
+                console.error('Toggle error:', errors);
+                alert('Terjadi kesalahan saat mengubah status UMKM');
             }
         });
     }
@@ -191,8 +208,10 @@ const cancelToggle = () => {
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                         <button
                                             @click="toggleStatus(umkm)"
-                                            :class="umkm.status === 'active' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
-                                            class="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                                            @click.ctrl="directToggle(umkm)"
+                                            :class="umkm.status === 'active' ? 'text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100' : 'text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100'"
+                                            class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border"
+                                            :title="umkm.status === 'active' ? 'Klik untuk nonaktifkan UMKM' : 'Klik untuk aktifkan UMKM'"
                                         >
                                             <svg v-if="umkm.status === 'active'" class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -202,10 +221,64 @@ const cancelToggle = () => {
                                             </svg>
                                             {{ umkm.status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}
                                         </button>
+                                        
+                                        <small class="block text-gray-400 text-xs mt-1">
+                                            Ctrl+click untuk langsung toggle
+                                        </small>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Confirmation -->
+        <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <!-- Background overlay -->
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="cancelToggle"></div>
+
+                <!-- Modal panel -->
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                                    Konfirmasi Perubahan Status
+                                </h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500" v-if="selectedUmkm">
+                                        Apakah Anda yakin ingin 
+                                        <span class="font-semibold">{{ selectedUmkm.status === 'active' ? 'menonaktifkan' : 'mengaktifkan' }}</span> 
+                                        UMKM <strong>{{ selectedUmkm.nama_umkm }}</strong>?
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button
+                            @click="confirmToggle"
+                            type="button"
+                            :class="selectedUmkm?.status === 'active' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'"
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
+                        >
+                            {{ selectedUmkm?.status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}
+                        </button>
+                        <button
+                            @click="cancelToggle"
+                            type="button"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                        >
+                            Batal
+                        </button>
                     </div>
                 </div>
             </div>

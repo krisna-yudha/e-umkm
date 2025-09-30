@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class UmkmApiController extends Controller
 {
@@ -268,6 +269,53 @@ class UmkmApiController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete UMKM',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Toggle UMKM status (admin only).
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function toggleStatus(int $id): JsonResponse
+    {
+        try {
+            // Check if user is admin
+            if (!Auth::check() || Auth::user()->role !== 'admin') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized. Admin access required.'
+                ], 403);
+            }
+
+            $umkm = Umkm::findOrFail($id);
+            $oldStatus = $umkm->status;
+            $newStatus = $oldStatus === 'active' ? 'inactive' : 'active';
+            
+            $umkm->update(['status' => $newStatus]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'UMKM status updated successfully',
+                'data' => [
+                    'umkm' => $umkm->fresh(),
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus
+                ]
+            ], 200);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'UMKM not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle UMKM status',
                 'error' => $e->getMessage()
             ], 500);
         }

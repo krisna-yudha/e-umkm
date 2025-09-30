@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::post('/', [UmkmApiController::class, 'store']);
         Route::put('/{id}', [UmkmApiController::class, 'update']);
         Route::delete('/{id}', [UmkmApiController::class, 'destroy']);
+        Route::post('/{id}/toggle-status', [UmkmApiController::class, 'toggleStatus']);
     });
 
     // Protected Menu routes
