@@ -276,9 +276,68 @@ Untuk endpoint yang protected, gunakan:
 
 ---
 
+## 🗺️ MAP & LEAFLET API ENDPOINTS
+
+### 20. Get All Map Locations (Public)
+- **Method**: `GET`
+- **URL**: `{{base_url}}/v1/map/locations`
+- **Headers**: 
+  ```
+  Accept: application/json
+  ```
+- **Query Parameters** (Optional):
+  ```
+  ?kategori=Makanan & Minuman&search=warung
+  ```
+- **Response**: GeoJSON Format
+
+### 21. Get Locations by Radius (Public)
+- **Method**: `POST`
+- **URL**: `{{base_url}}/v1/map/locations/radius`
+- **Headers**: 
+  ```
+  Content-Type: application/json
+  Accept: application/json
+  ```
+- **Body (JSON)**:
+  ```json
+  {
+    "latitude": -7.7956,
+    "longitude": 110.3695,
+    "radius": 10,
+    "kategori": "Makanan & Minuman"
+  }
+  ```
+
+### 22. Get Map Categories (Public)
+- **Method**: `GET`
+- **URL**: `{{base_url}}/v1/map/categories`
+- **Headers**: 
+  ```
+  Accept: application/json
+  ```
+
+### 23. Get Map Statistics (Public)
+- **Method**: `GET`
+- **URL**: `{{base_url}}/v1/map/statistics`
+- **Headers**: 
+  ```
+  Accept: application/json
+  ```
+
+### 24. Get Location Details (Public)
+- **Method**: `GET`
+- **URL**: `{{base_url}}/v1/map/location/1`
+- **Headers**: 
+  ```
+  Accept: application/json
+  ```
+
+---
+
 ## 🏥 UTILITY ENDPOINTS
 
-### 20. Health Check (Public)
+### 25. Health Check (Public)
 - **Method**: `GET`
 - **URL**: `{{base_url}}/health`
 - **Headers**: 
@@ -286,7 +345,7 @@ Untuk endpoint yang protected, gunakan:
   Accept: application/json
   ```
 
-### 21. Get User Info (Protected)
+### 26. Get User Info (Protected)
 - **Method**: `GET`
 - **URL**: `{{base_url}}/user`
 - **Headers**: 

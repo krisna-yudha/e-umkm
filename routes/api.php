@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\UmkmApiController;
 use App\Http\Controllers\Api\MenuApiController;
+use App\Http\Controllers\Api\MapApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +44,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/', [MenuApiController::class, 'allMenus']);
         Route::get('/umkm/{umkmId}', [MenuApiController::class, 'index']);
         Route::get('/umkm/{umkmId}/{menuId}', [MenuApiController::class, 'show']);
+    });
+
+    // Public Map routes
+    Route::prefix('map')->group(function () {
+        Route::get('/locations', [MapApiController::class, 'getAllLocations']);
+        Route::post('/locations/radius', [MapApiController::class, 'getLocationsByRadius']);
+        Route::get('/categories', [MapApiController::class, 'getCategories']);
+        Route::get('/statistics', [MapApiController::class, 'getMapStatistics']);
+        Route::get('/location/{id}', [MapApiController::class, 'getLocationDetails']);
     });
 });
 

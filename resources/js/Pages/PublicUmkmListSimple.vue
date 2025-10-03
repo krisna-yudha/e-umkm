@@ -3,6 +3,14 @@ import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
+// Interface for user
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    role?: string;
+}
+
 // Interface for pagination
 interface PaginationLink {
     url: string | null;
@@ -23,9 +31,12 @@ interface PaginationData {
     next_page_url: string | null;
 }
 
-// Props with pagination data
+// Props with pagination data and auth
 const props = defineProps<{
-    umkms: PaginationData
+    umkms: PaginationData;
+    auth?: {
+        user: User | null;
+    };
 }>();
 
 // Search functionality
@@ -33,6 +44,24 @@ const searchQuery = ref('');
 
 // View toggle functionality
 const isGridView = ref(true);
+
+// Smart navigation - determine home route based on auth status
+const homeRoute = computed(() => {
+    // If user is logged in, go to dashboard
+    if (props.auth?.user) {
+        return route('dashboard');
+    }
+    // If not logged in, go to public home
+    return route('home');
+});
+
+// Determine home button text based on auth status
+const homeButtonText = computed(() => {
+    if (props.auth?.user) {
+        return 'Kembali ke Dashboard';
+    }
+    return 'Kembali ke Beranda';
+});
 
 const filteredUmkms = computed(() => {
     if (!searchQuery.value) return props.umkms.data;
@@ -43,6 +72,14 @@ const filteredUmkms = computed(() => {
         umkm.alamat?.toLowerCase().includes(searchQuery.value.toLowerCase())
     );
 });
+
+// Handle image error
+const handleImageError = (event: Event) => {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+        target.style.display = 'none';
+    }
+};
 
 // Pagination functions
 const goToPage = (url: string | null) => {
@@ -85,7 +122,7 @@ const isSearching = computed(() => {
                         <!-- Navigation Buttons dengan styling card homepage -->
                         <div class="flex flex-col sm:flex-row gap-6 justify-center">
                             <Link 
-                                href="/" 
+                                :href="homeRoute" 
                                 class="group relative overflow-hidden bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-2xl p-4 hover:bg-opacity-20 transition-all duration-300 shadow-xl"
                             >
                                 <div class="flex items-center justify-center space-x-3">
@@ -94,7 +131,7 @@ const isSearching = computed(() => {
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                                         </svg>
                                     </div>
-                                    <span class="text-white font-semibold">Kembali ke Beranda</span>
+                                    <span class="text-white font-semibold">{{ homeButtonText }}</span>
                                 </div>
                             </Link>
                             
@@ -185,8 +222,21 @@ const isSearching = computed(() => {
                             class="group relative overflow-hidden bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white border-opacity-20 shadow-2xl hover:bg-opacity-20 transition-all duration-300"
                         >
                             <!-- Card Header -->
-                            <div class="relative h-32 sm:h-40 bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 overflow-hidden">
-                                <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                            <div class="relative h-32 sm:h-40 overflow-hidden">
+                                <!-- Background Image or Gradient -->
+                                <div v-if="umkm.gambar" class="absolute inset-0">
+                                    <img 
+                                        :src="`/storage/${umkm.gambar}`" 
+                                        :alt="umkm.nama_umkm"
+                                        class="w-full h-full object-cover"
+                                        @error="handleImageError"
+                                    />
+                                    <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+                                </div>
+                                <div v-else class="absolute inset-0 bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
+                                    <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                                </div>
+                                
                                 <div class="absolute top-3 left-3 sm:top-4 sm:left-4">
                                     <span class="bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-semibold text-gray-800">
                                         {{ umkm.kategori || 'Kategori' }}
@@ -247,18 +297,32 @@ const isSearching = computed(() => {
                             class="group bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 shadow-xl hover:bg-opacity-20 transition-all duration-300"
                         >
                             <div class="flex flex-col lg:flex-row">
-                                <!-- Left side - Image placeholder -->
-                                <div class="lg:w-48 h-32 lg:h-auto bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 relative overflow-hidden lg:rounded-l-2xl rounded-t-2xl lg:rounded-tr-none">
-                                    <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                                <!-- Left side - Image -->
+                                <div class="lg:w-48 h-32 lg:h-auto relative overflow-hidden lg:rounded-l-2xl rounded-t-2xl lg:rounded-tr-none">
+                                    <!-- Background Image or Gradient -->
+                                    <div v-if="umkm.gambar" class="absolute inset-0">
+                                        <img 
+                                            :src="`/storage/${umkm.gambar}`" 
+                                            :alt="umkm.nama_umkm"
+                                            class="w-full h-full object-cover"
+                                            @error="handleImageError"
+                                        />
+                                        <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+                                    </div>
+                                    <div v-else class="absolute inset-0 bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
+                                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                                        <!-- Default Icon -->
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <svg class="w-12 h-12 text-white text-opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    
                                     <div class="absolute top-3 left-3">
                                         <span class="bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-semibold text-gray-800">
                                             {{ umkm.kategori || 'Kategori' }}
                                         </span>
-                                    </div>
-                                    <div class="absolute inset-0 flex items-center justify-center">
-                                        <svg class="w-12 h-12 text-white text-opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                        </svg>
                                     </div>
                                 </div>
 

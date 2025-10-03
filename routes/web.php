@@ -5,18 +5,19 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UmkmController;
 use App\Http\Controllers\UmkmMenuController;
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\ArticleController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 // Public routes
-Route::get('/', function () {
-    return Inertia::render('Home');
-})->name('home');
+Route::get('/', [DashboardController::class, 'home'])->name('home');
 Route::get('/umkm-list', [DashboardController::class, 'publicUmkmList'])->name('public.umkm.list');
 Route::get('/umkm-public/{umkm}', [DashboardController::class, 'publicUmkmShow'])->name('public.umkm.show');
 Route::get('/mapping', [DashboardController::class, 'mapping'])->name('mapping');
+Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
+Route::get('/articles/api', [ArticleController::class, 'api'])->name('articles.api');
 
 // Protected routes
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');

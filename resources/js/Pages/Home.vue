@@ -1,6 +1,35 @@
 <script setup lang="ts">
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    role?: string;
+}
+
+const props = defineProps<{
+    auth?: {
+        user: User | null;
+    };
+}>();
+
+// Smart navigation for login/dashboard button
+const loginRoute = computed(() => {
+    if (props.auth?.user) {
+        return route('dashboard');
+    }
+    return route('login');
+});
+
+const loginButtonText = computed(() => {
+    if (props.auth?.user) {
+        return 'Dashboard';
+    }
+    return 'Login sebagai Penjual';
+});
 </script>
 
 <template>
@@ -19,6 +48,20 @@ import { Head, Link } from '@inertiajs/vue3';
             
             <div class="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8">
                 <div class="max-w-7xl mx-auto text-center">
+                    <!-- User Welcome Section (if logged in) -->
+                    <div v-if="auth?.user" class="mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-4 max-w-md mx-auto">
+                        <p class="text-white/80 text-sm">Selamat datang kembali,</p>
+                        <p class="text-white font-semibold text-lg">{{ auth.user.name }}</p>
+                        <Link 
+                            :href="route('logout')" 
+                            method="post" 
+                            as="button"
+                            class="mt-2 text-red-300 hover:text-red-200 text-sm underline"
+                        >
+                            Logout
+                        </Link>
+                    </div>
+
                     <!-- Header Section -->
                     <div class="mb-12 mt-8">
                         <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 tracking-tight">
@@ -38,7 +81,7 @@ import { Head, Link } from '@inertiajs/vue3';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                         <!-- Card Penjual -->
                         <Link 
-                            :href="route('login')"
+                            :href="loginRoute"
                             class="group relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
                         >
                             <div class="absolute inset-0 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -48,7 +91,7 @@ import { Head, Link } from '@inertiajs/vue3';
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                     </svg>
                                 </div>
-                                <h2 class="text-xl font-bold text-white">Penjual</h2>
+                                <h2 class="text-xl font-bold text-white">UMKM</h2>
                             </div>
                         </Link>
 
@@ -64,9 +107,63 @@ import { Head, Link } from '@inertiajs/vue3';
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                     </svg>
                                 </div>
-                                <h2 class="text-xl font-bold text-white">Pembeli</h2>
+                                <h2 class="text-xl font-bold text-white">Pengunjung</h2>
                             </div>
                         </Link>
+                    </div>
+
+                    <!-- Additional Navigation Cards -->
+                    <div class="mt-8 max-w-4xl mx-auto">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Mapping Card
+                            <Link 
+                                :href="route('mapping')"
+                                class="group relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all duration-300 hover:scale-105 cursor-pointer"
+                            >
+                                <div class="absolute inset-0 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <div class="relative z-10 text-center">
+                                    <div class="h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center rounded-xl mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-sm font-semibold text-white">Peta UMKM</h3>
+                                </div>
+                            </Link> -->
+
+                            <!-- Articles Card
+                            <Link 
+                                :href="route('articles.index')"
+                                class="group relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all duration-300 hover:scale-105 cursor-pointer"
+                            >
+                                <div class="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-violet-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <div class="relative z-10 text-center">
+                                    <div class="h-12 w-12 bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center rounded-xl mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-sm font-semibold text-white">Informasi & Tips</h3>
+                                </div>
+                            </Link> -->
+
+                            <!-- UMKM List Card
+                            <Link 
+                                :href="route('public.umkm.list')"
+                                class="group relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all duration-300 hover:scale-105 cursor-pointer sm:col-span-2 lg:col-span-1"
+                            >
+                                <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <div class="relative z-10 text-center">
+                                    <div class="h-12 w-12 bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center rounded-xl mx-auto mb-3">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-sm font-semibold text-white">Jelajahi UMKM</h3>
+                                </div>
+                            </Link> -->
+                        </div>
                     </div>
                 </div>
             </div>

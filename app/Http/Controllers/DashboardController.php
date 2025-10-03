@@ -10,6 +10,15 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
+    public function home()
+    {
+        return Inertia::render('Home', [
+            'auth' => [
+                'user' => Auth::user()
+            ]
+        ]);
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -78,7 +87,10 @@ class DashboardController extends Controller
         }
         
         return Inertia::render('PublicUmkmListSimple', [
-            'umkms' => $umkms
+            'umkms' => $umkms,
+            'auth' => [
+                'user' => Auth::user()
+            ]
         ]);
     }
 
@@ -90,7 +102,10 @@ class DashboardController extends Controller
         }]);
 
         return Inertia::render('PublicUmkmShow', [
-            'umkm' => $umkm
+            'umkm' => $umkm,
+            'auth' => [
+                'user' => Auth::user()
+            ]
         ]);
     }
 }

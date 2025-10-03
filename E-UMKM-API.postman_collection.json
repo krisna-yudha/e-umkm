@@ -575,6 +575,175 @@
 			]
 		},
 		{
+			"name": "Map & Leaflet API",
+			"item": [
+				{
+					"name": "Get All Locations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/map/locations",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "map", "locations"]
+						}
+					}
+				},
+				{
+					"name": "Get Locations with Category Filter",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/map/locations?kategori=Makanan & Minuman",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "map", "locations"],
+							"query": [
+								{
+									"key": "kategori",
+									"value": "Makanan & Minuman"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Locations with Search",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/map/locations?search=warung",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "map", "locations"],
+							"query": [
+								{
+									"key": "search",
+									"value": "warung"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Locations by Radius",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"latitude\": -7.7956,\n    \"longitude\": 110.3695,\n    \"radius\": 10,\n    \"kategori\": \"Makanan & Minuman\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v1/map/locations/radius",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "map", "locations", "radius"]
+						}
+					}
+				},
+				{
+					"name": "Get Nearby Locations (Current Location)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"latitude\": -6.9175,\n    \"longitude\": 107.6191,\n    \"radius\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v1/map/locations/radius",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "map", "locations", "radius"]
+						}
+					}
+				},
+				{
+					"name": "Get Map Categories",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/map/categories",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "map", "categories"]
+						}
+					}
+				},
+				{
+					"name": "Get Map Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/map/statistics",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "map", "statistics"]
+						}
+					}
+				},
+				{
+					"name": "Get Location Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/map/location/1",
+							"host": ["{{base_url}}"],
+							"path": ["v1", "map", "location", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
 			"name": "Utility",
 			"item": [
 				{

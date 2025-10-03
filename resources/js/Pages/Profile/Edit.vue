@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 
 defineProps<{
     mustVerifyEmail?: boolean;
@@ -18,13 +18,25 @@ defineProps<{
         <template #header>
             <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 px-6 py-8 rounded-lg shadow-lg">
                 <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-3xl font-bold text-white mb-2">
-                            ✨ Edit Profile
-                        </h2>
-                        <p class="text-blue-100 text-lg">
-                            Kelola informasi profile dan pengaturan keamanan akun Anda
-                        </p>
+                    <div class="flex items-center space-x-4">
+                        <!-- Back Button -->
+                        <Link 
+                            :href="route('dashboard')"
+                            class="flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-white hover:bg-white/30 transition-all duration-200 group"
+                        >
+                            <svg class="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                            Kembali
+                        </Link>
+                        <div>
+                            <h2 class="text-3xl font-bold text-white mb-2">
+                                ✨ Edit Profile
+                            </h2>
+                            <p class="text-blue-100 text-lg">
+                                Kelola informasi profile dan pengaturan keamanan akun Anda
+                            </p>
+                        </div>
                     </div>
                     <div class="hidden md:block">
                         <div class="bg-white/20 backdrop-blur-sm rounded-full p-4">
