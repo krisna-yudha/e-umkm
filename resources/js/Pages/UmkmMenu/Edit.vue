@@ -34,24 +34,60 @@ const form = useForm({
 });
 
 const fileInput = ref<HTMLInputElement>();
+const imagePreview = ref<string | null>(null);
 
 const handleFileUpload = (event: Event) => {
     const target = event.target as HTMLInputElement;
     if (target.files && target.files[0]) {
-        form.gambar_menu = target.files[0];
+        const file = target.files[0];
+        form.gambar_menu = file;
+        
+        // Create preview URL
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imagePreview.value = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+const removeNewImage = () => {
+    form.gambar_menu = null;
+    imagePreview.value = null;
+    if (fileInput.value) {
+        fileInput.value.value = '';
     }
 };
 
 const submit = () => {
-    // Use forceFormData only when there's a file upload
-    if (form.gambar_menu && form.gambar_menu instanceof File) {
-        form.put(route('umkm.menu.update', [props.umkm.id, props.menu.id]), {
-            forceFormData: true
-        });
-    } else {
-        // For regular updates without file, use normal PUT
-        form.put(route('umkm.menu.update', [props.umkm.id, props.menu.id]));
-    }
+    // Create new form data with _method for Laravel
+    const updateForm = useForm({
+        _method: 'PUT',
+        nama_menu: form.nama_menu,
+        deskripsi: form.deskripsi,
+        harga: form.harga,
+        kategori_menu: form.kategori_menu,
+        tersedia: form.tersedia,
+        gambar_menu: form.gambar_menu
+    });
+
+    // Use POST to the update route (Laravel will recognize _method)
+    updateForm.post(route('umkm.menu.update', [props.umkm.id, props.menu.id]), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            // Reset file input and preview on success
+            form.gambar_menu = null;
+            imagePreview.value = null;
+            if (fileInput.value) {
+                fileInput.value.value = '';
+            }
+        },
+        onError: (errors) => {
+            // Handle validation errors
+            console.log('Validation errors:', errors);
+        }
+    });
 };
 </script>
 
@@ -174,8 +210,36 @@ const submit = () => {
                         <!-- Upload Gambar Baru -->
                         <div>
                             <label for="gambar_menu" class="block text-sm font-medium text-gray-700 mb-2">
-                                {{ menu.gambar_menu ? 'Ganti Foto Produk' : 'Upload Foto Produk' }}
+                                {{ menu.gambar_menu ? 'Ganti Foto Produk (Opsional)' : 'Upload Foto Produk' }}
                             </label>
+                            <p v-if="menu.gambar_menu" class="text-xs text-gray-500 mb-3">
+                                💡 Kosongkan jika tidak ingin mengubah foto yang sudah ada
+                            </p>
+                            
+                            <!-- New Image Preview -->
+                            <div v-if="imagePreview" class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Preview Foto Baru
+                                </label>
+                                <div class="relative w-48 h-48 rounded-lg overflow-hidden border-2 border-purple-300">
+                                    <img 
+                                        :src="imagePreview" 
+                                        alt="Preview"
+                                        class="w-full h-full object-cover"
+                                    >
+                                    <button 
+                                        type="button"
+                                        @click="removeNewImage"
+                                        class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                        title="Hapus foto baru"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors duration-200">
                                 <input 
                                     ref="fileInput"
@@ -193,14 +257,19 @@ const submit = () => {
                                     </p>
                                     <p class="text-xs text-gray-500">PNG, JPG, GIF hingga 2MB</p>
                                 </div>
-                                <div v-else class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">{{ form.gambar_menu.name }}</span>
+                                <div v-else class="flex items-center justify-center space-x-4">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span class="text-sm text-gray-700">{{ form.gambar_menu.name }}</span>
+                                    </div>
                                     <button 
                                         type="button"
-                                        @click="form.gambar_menu = null"
-                                        class="text-red-500 hover:text-red-700"
+                                        @click="fileInput?.click()"
+                                        class="text-purple-600 hover:text-purple-800 text-sm font-medium"
                                     >
-                                        Hapus
+                                        Ganti
                                     </button>
                                 </div>
                             </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 interface UmkmMenu {
     id: number;
@@ -23,6 +24,9 @@ const props = defineProps<{
     menus: UmkmMenu[];
 }>();
 
+// Track loading state for individual menus
+const loadingMenus = ref<Set<number>>(new Set());
+
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -31,10 +35,39 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
-const deleteMenu = (menuId: number) => {
-    if (confirm('Apakah Anda yakin ingin menghapus menu ini?')) {
-        router.delete(route('umkm.menu.destroy', [props.umkm.id, menuId]));
+const toggleMenuStatus = (menuId: number, isAvailable: boolean) => {
+    // Add to loading state
+    loadingMenus.value.add(menuId);
+    
+    router.patch(route('umkm.menu.update', [props.umkm.id, menuId]), {
+        tersedia: isAvailable
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            // Optional: Show success feedback (you can remove this if not needed)
+            // console.log('Status menu berhasil diperbarui');
+        },
+        onError: (errors) => {
+            console.error('Error updating menu status:', errors);
+            // Optionally show error message to user
+        },
+        onFinish: () => {
+            // Remove from loading state when finished
+            loadingMenus.value.delete(menuId);
+        }
+    });
+};
+
+const handleMenuClick = (menuId: number, event: Event) => {
+    // Prevent click when interacting with toggle switch
+    const target = event.target as HTMLElement;
+    if (target.closest('label') || target.closest('input')) {
+        return;
     }
+    
+    // Navigate to menu edit page
+    router.visit(route('umkm.menu.edit', [props.umkm.id, menuId]));
 };
 </script>
 
@@ -72,21 +105,21 @@ const deleteMenu = (menuId: number) => {
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div v-if="menus.length === 0" class="text-center py-12">
-                    <div class="mx-auto max-w-md">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="py-6 sm:py-8 lg:py-12">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div v-if="menus.length === 0" class="text-center py-8 sm:py-12">
+                    <div class="mx-auto max-w-md px-4">
+                        <svg class="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v11a2 2 0 002 2h9a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                         </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada menu</h3>
-                        <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan menu/produk pertama Anda.</p>
-                        <div class="mt-6">
+                        <h3 class="mt-2 text-sm sm:text-base font-medium text-gray-900">Belum ada menu</h3>
+                        <p class="mt-1 text-xs sm:text-sm text-gray-500">Mulai dengan menambahkan menu/produk pertama Anda.</p>
+                        <div class="mt-4 sm:mt-6">
                             <Link 
                                 :href="route('umkm.menu.create', umkm.id)"
-                                class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 border border-transparent rounded-lg font-semibold text-sm text-white tracking-wide hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
+                                class="inline-flex items-center px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 border border-transparent rounded-lg font-semibold text-xs sm:text-sm text-white tracking-wide hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200"
                             >
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                 </svg>
                                 Tambah Menu Pertama
@@ -95,59 +128,84 @@ const deleteMenu = (menuId: number) => {
                     </div>
                 </div>
 
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div v-for="menu in menus" :key="menu.id" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105">
-                        <!-- Menu Image -->
-                        <div class="aspect-w-16 aspect-h-12 bg-gray-200">
-                            <img 
-                                v-if="menu.gambar_menu" 
-                                :src="`/storage/${menu.gambar_menu}`" 
-                                :alt="menu.nama_menu"
-                                class="w-full h-48 object-cover"
-                            >
-                            <div v-else class="w-full h-48 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
-                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                            </div>
+                <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <!-- Header List -->
+                    <div class="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                        <div class="flex items-center justify-between text-sm font-medium text-gray-700">
+                            <span>Menu</span>
+                            <span>Status</span>
                         </div>
-
-                        <!-- Menu Info -->
-                        <div class="p-4">
-                            <div class="flex items-start justify-between mb-2">
-                                <h3 class="font-semibold text-gray-900 text-lg truncate flex-1">{{ menu.nama_menu }}</h3>
-                                <div class="flex items-center space-x-1 ml-2">
-                                    <span :class="menu.tersedia ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium">
-                                        {{ menu.tersedia ? 'Tersedia' : 'Habis' }}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <p v-if="menu.kategori_menu" class="text-sm text-gray-500 mb-2">{{ menu.kategori_menu }}</p>
-                            
-                            <p v-if="menu.deskripsi" class="text-gray-600 text-sm mb-3 line-clamp-2">{{ menu.deskripsi }}</p>
-                            
+                    </div>
+                    
+                    <!-- List Items -->
+                    <div class="divide-y divide-gray-100">
+                        <div v-for="menu in menus" :key="menu.id" 
+                             @click="handleMenuClick(menu.id, $event)"
+                             class="px-4 py-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer active:bg-gray-100 touch-manipulation">
                             <div class="flex items-center justify-between">
-                                <span class="text-lg font-bold text-purple-600">{{ formatCurrency(menu.harga) }}</span>
-                                <div class="flex space-x-2">
-                                    <Link 
-                                        :href="route('umkm.menu.edit', [umkm.id, menu.id])"
-                                        class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                                        title="Edit Menu"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                        </svg>
-                                    </Link>
-                                    <button 
-                                        @click="deleteMenu(menu.id)"
-                                        class="text-red-600 hover:text-red-800 transition-colors duration-200"
-                                        title="Hapus Menu"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
+                                <!-- Menu Info -->
+                                <div class="flex items-center space-x-4 flex-1">
+                                    <!-- Menu Image -->
+                                    <div class="flex-shrink-0">
+                                        <img 
+                                            v-if="menu.gambar_menu" 
+                                            :src="`/storage/${menu.gambar_menu}`" 
+                                            :alt="menu.nama_menu"
+                                            class="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg"
+                                        >
+                                        <div v-else class="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg flex items-center justify-center">
+                                            <svg class="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Menu Details -->
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="text-sm sm:text-base font-semibold text-gray-900 truncate">{{ menu.nama_menu }}</h3>
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1">
+                                            <p v-if="menu.kategori_menu" class="text-xs sm:text-sm text-gray-500">{{ menu.kategori_menu }}</p>
+                                            <span class="text-sm sm:text-base font-bold text-purple-600">{{ formatCurrency(menu.harga) }}</span>
+                                        </div>
+                                        <p v-if="menu.deskripsi" class="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-1">{{ menu.deskripsi }}</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Status Toggle -->
+                                <div class="flex flex-col items-end space-y-1 flex-shrink-0 ml-4"
+                                     @click.stop>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            :checked="menu.tersedia" 
+                                            :disabled="loadingMenus.has(menu.id)"
+                                            @change="(event) => toggleMenuStatus(menu.id, (event.target as HTMLInputElement).checked)"
+                                            class="sr-only peer"
+                                        >
+                                        <div :class="[
+                                            'relative w-10 h-6 rounded-full peer transition-all',
+                                            loadingMenus.has(menu.id) 
+                                                ? 'bg-gray-300 cursor-not-allowed' 
+                                                : 'bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 peer-checked:bg-green-500 hover:peer-checked:bg-green-600',
+                                            'peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all'
+                                        ]">
+                                            <!-- Loading spinner -->
+                                            <div v-if="loadingMenus.has(menu.id)" class="absolute inset-0 flex items-center justify-center">
+                                                <svg class="w-3 h-3 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <span :class="[
+                                        'text-xs font-medium transition-colors',
+                                        loadingMenus.has(menu.id) 
+                                            ? 'text-gray-400' 
+                                            : menu.tersedia ? 'text-green-600' : 'text-red-600'
+                                    ]">
+                                        {{ loadingMenus.has(menu.id) ? 'Menyimpan...' : menu.tersedia ? 'Tersedia' : 'Habis' }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -159,6 +217,14 @@ const deleteMenu = (menuId: number) => {
 </template>
 
 <style>
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;

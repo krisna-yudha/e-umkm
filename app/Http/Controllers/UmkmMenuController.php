@@ -184,6 +184,18 @@ class UmkmMenuController extends Controller
                 abort(404, 'Menu not found');
             }
 
+            // Check if this is a status toggle request (only tersedia field)
+            if ($request->has('tersedia') && count($request->except(['_token', '_method'])) === 1) {
+                $menu->update(['tersedia' => (bool)$request->tersedia]);
+                
+                // Return back for Inertia requests with fresh data
+                return back()->with([
+                    'success' => 'Status menu berhasil diperbarui',
+                    'menus' => $umkm->menus()->orderBy('nama_menu')->get()
+                ]);
+            }
+
+            // Full update validation for regular form submissions
             $validated = $request->validate([
                 'nama_menu' => 'required|string|max:255',
                 'deskripsi' => 'nullable|string',

@@ -1,34 +1,5 @@
 <template>
     <AuthenticatedLayout>
-        <template #header>
-            <div class="bg-gradient-to-r from-purple-600 to-blue-600 -mx-4 -mt-4 px-4 pt-4 pb-6">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="font-bold text-2xl text-white leading-tight">
-                               Profil Saya
-                            </h2>
-                            <p class="text-purple-100 text-sm">Kelola informasi profil dan UMKM Anda</p>
-                        </div>
-                    </div>
-                    <Link
-                        :href="route('profile.edit')"
-                        class="inline-flex items-center px-6 py-3 bg-white text-purple-600 border border-transparent rounded-xl font-semibold text-sm hover:bg-purple-50 focus:bg-purple-50 active:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-purple-600 transition-all duration-200 shadow-lg hover:shadow-xl"
-                    >
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                        Edit Profil
-                    </Link>
-                </div>
-            </div>
-        </template>
-
         <div class="py-8 bg-gradient-to-br from-gray-50 to-purple-50 min-h-screen">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <!-- Profile Stats Section -->
@@ -116,7 +87,7 @@
                                     <span class="text-xs text-gray-600 text-center mt-1">Jelajahi lokasi UMKM</span>
                                 </Link>
 
-                                <!-- Bantuan -->
+                                <!-- Bantuan
                                 <Link
                                     :href="route('help')"
                                     class="group flex flex-col items-center p-4 md:p-6 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200 hover:from-orange-100 hover:to-orange-200 transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1"
@@ -128,7 +99,7 @@
                                     </div>
                                     <span class="text-sm md:text-base font-semibold text-gray-800 text-center">Bantuan</span>
                                     <span class="text-xs text-gray-600 text-center mt-1">Pusat bantuan</span>
-                                </Link>
+                                </Link> -->
                             </div>
                         </div>
                     </div>

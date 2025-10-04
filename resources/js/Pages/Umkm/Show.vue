@@ -253,87 +253,117 @@ const formatDate = (date: string) => {
                                 <h3 class="text-xl font-semibold text-gray-900">Daftar Menu & Produk</h3>
                                 <p class="text-sm text-gray-600 mt-1">{{ umkm.menus.length }} menu tersedia</p>
                             </div>
-                            <Link 
-                                :href="route('umkm.menu.create', umkm.id)"
-                                class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition ease-in-out duration-150"
-                            >
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
-                                Tambah Menu
-                            </Link>
+                            <div class="flex space-x-3">
+                                <Link 
+                                    :href="route('umkm.menu.index', umkm.id)"
+                                    class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 transition ease-in-out duration-150"
+                                >
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                    </svg>
+                                    Kelola Menu
+                                </Link>
+                                <Link 
+                                    :href="route('umkm.menu.create', umkm.id)"
+                                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition ease-in-out duration-150"
+                                >
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Tambah Menu
+                                </Link>
+                            </div>
                         </div>
 
                         <div v-if="umkm.menus.length === 0" class="text-center py-8">
                             <div class="text-4xl mb-4">🍽️</div>
                             <h4 class="text-lg font-medium text-gray-900 mb-2">Belum Ada Menu</h4>
                             <p class="text-gray-500 mb-6">Tambahkan menu atau produk pertama untuk UMKM Anda</p>
-                            <Link 
-                                :href="route('umkm.menu.create', umkm.id)"
-                                class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium"
-                            >
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
-                                Tambah Menu Pertama
-                            </Link>
+                            <div class="flex justify-center space-x-3">
+                                <Link 
+                                    :href="route('umkm.menu.index', umkm.id)"
+                                    class="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200 font-medium"
+                                >
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                    </svg>
+                                    Kelola Menu
+                                </Link>
+                                <Link 
+                                    :href="route('umkm.menu.create', umkm.id)"
+                                    class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium"
+                                >
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    Tambah Menu Pertama
+                                </Link>
+                            </div>
                         </div>
 
-                        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <div v-for="menu in umkm.menus" :key="menu.id" class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
-                                <!-- Menu Image -->
-                                <div class="aspect-w-16 aspect-h-12 bg-gray-200">
-                                    <img 
-                                        v-if="menu.gambar_menu" 
-                                        :src="`/storage/${menu.gambar_menu}`" 
-                                        :alt="menu.nama_menu"
-                                        class="w-full h-40 object-cover"
-                                    >
-                                    <div v-else class="w-full h-40 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                        </svg>
+                        <div v-else>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div v-for="menu in umkm.menus.slice(0, 6)" :key="menu.id" class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
+                                    <!-- Menu Image -->
+                                    <div class="aspect-w-16 aspect-h-12 bg-gray-200">
+                                        <img 
+                                            v-if="menu.gambar_menu" 
+                                            :src="`/storage/${menu.gambar_menu}`" 
+                                            :alt="menu.nama_menu"
+                                            class="w-full h-40 object-cover"
+                                        >
+                                        <div v-else class="w-full h-40 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                                            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <!-- Menu Info -->
-                                <div class="p-4">
-                                    <div class="flex items-start justify-between mb-2">
-                                        <h4 class="font-semibold text-gray-900 text-sm line-clamp-1">{{ menu.nama_menu }}</h4>
-                                        <span :class="menu.tersedia ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0">
-                                            {{ menu.tersedia ? 'Tersedia' : 'Habis' }}
-                                        </span>
-                                    </div>
-                                    
-                                    <p v-if="menu.kategori_menu" class="text-xs text-blue-600 font-medium mb-2">{{ menu.kategori_menu }}</p>
-                                    
-                                    <p v-if="menu.deskripsi" class="text-gray-600 text-xs mb-3 line-clamp-2">{{ menu.deskripsi }}</p>
-                                    
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-lg font-bold text-green-600">{{ formatCurrency(menu.harga) }}</span>
-                                        <div class="flex space-x-2">
-                                            <Link 
-                                                :href="route('umkm.menu.edit', [umkm.id, menu.id])"
-                                                class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                                                title="Edit Menu"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                </svg>
-                                            </Link>
-                                            <Link 
-                                                :href="route('umkm.menu.show', [umkm.id, menu.id])"
-                                                class="text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                                                title="Lihat Detail Menu"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                </svg>
-                                            </Link>
+                                    <!-- Menu Info -->
+                                    <div class="p-4">
+                                        <div class="flex items-start justify-between mb-2">
+                                            <h4 class="font-semibold text-gray-900 text-sm line-clamp-1">{{ menu.nama_menu }}</h4>
+                                            <span :class="menu.tersedia ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0">
+                                                {{ menu.tersedia ? 'Tersedia' : 'Habis' }}
+                                            </span>
+                                        </div>
+                                        
+                                        <p v-if="menu.kategori_menu" class="text-xs text-blue-600 font-medium mb-2">{{ menu.kategori_menu }}</p>
+                                        
+                                        <p v-if="menu.deskripsi" class="text-gray-600 text-xs mb-3 line-clamp-2">{{ menu.deskripsi }}</p>
+                                        
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-lg font-bold text-green-600">{{ formatCurrency(menu.harga) }}</span>
+                                            <div class="flex space-x-2">
+                                                <Link 
+                                                    :href="route('umkm.menu.edit', [umkm.id, menu.id])"
+                                                    class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                                                    title="Edit Menu"
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                </Link>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- Show "Lihat Semua Menu" button if there are more than 6 menus -->
+                            <div v-if="umkm.menus.length > 6" class="text-center mt-6">
+                                <Link 
+                                    :href="route('umkm.menu.index', umkm.id)"
+                                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                                >
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                    </svg>
+                                    Lihat Semua Menu ({{ umkm.menus.length }})
+                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                    </svg>
+                                </Link>
                             </div>
                         </div>
                     </div>

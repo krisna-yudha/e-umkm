@@ -117,6 +117,12 @@ const submit = () => {
                             </Link>
                         </div>
 
+                        <!-- <div class="text-center">
+                            <Link :href="route('password.reset.verification')" class="text-blue-300 hover:text-blue-200 text-sm">
+                                Sudah punya kode verifikasi?
+                            </Link>
+                        </div> -->
+
                         <div class="text-center">
                             <Link href="/" class="text-gray-400 hover:text-gray-300 text-sm">
                                 ← Kembali ke beranda

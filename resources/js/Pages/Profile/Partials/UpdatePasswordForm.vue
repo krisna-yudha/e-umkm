@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
@@ -103,7 +102,16 @@ const updatePassword = () => {
             </div>
 
             <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
+                <button 
+                    type="submit"
+                    :disabled="form.processing"
+                    class="px-8 py-3 bg-gradient-to-r from-amber-600 to-orange-700 text-white font-semibold rounded-xl hover:from-amber-700 hover:to-orange-800 focus:outline-none focus:ring-3 focus:ring-amber-200 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    {{ form.processing ? 'Menyimpan...' : 'Simpan Password' }}
+                </button>
 
                 <Transition
                     enter-active-class="transition ease-in-out"

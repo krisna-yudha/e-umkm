@@ -8,6 +8,7 @@ import { Head, Link } from '@inertiajs/vue3';
 defineProps<{
     mustVerifyEmail?: boolean;
     status?: string;
+    passwordUpdateStatus?: string;
 }>();
 </script>
 
@@ -15,42 +16,9 @@ defineProps<{
     <Head title="Edit Profile" />
 
     <AuthenticatedLayout>
-        <template #header>
-            <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 px-6 py-8 rounded-lg shadow-lg">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <!-- Back Button -->
-                        <Link 
-                            :href="route('dashboard')"
-                            class="flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-white hover:bg-white/30 transition-all duration-200 group"
-                        >
-                            <svg class="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                            Kembali
-                        </Link>
-                        <div>
-                            <h2 class="text-3xl font-bold text-white mb-2">
-                                ✨ Edit Profile
-                            </h2>
-                            <p class="text-blue-100 text-lg">
-                                Kelola informasi profile dan pengaturan keamanan akun Anda
-                            </p>
-                        </div>
-                    </div>
-                    <div class="hidden md:block">
-                        <div class="bg-white/20 backdrop-blur-sm rounded-full p-4">
-                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </template>
-
-        <div class="py-12 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
-            <div class="mx-auto max-w-5xl space-y-8 sm:px-6 lg:px-8">
+       
+        <div class="py-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+            <div class="mx-auto max-w-5xl space-y-6 sm:px-6 lg:px-8">
                 <!-- Profile Information Card -->
                 <div class="group transform hover:scale-[1.02] transition-all duration-300">
                     <div class="overflow-hidden bg-white shadow-xl sm:rounded-2xl border-0 ring-1 ring-gray-200/50">
@@ -63,7 +31,7 @@ defineProps<{
                                 </div>
                                 <div>
                                     <h3 class="text-xl font-bold text-white">
-                                        👤 Informasi Profile
+                                        Informasi Profile
                                     </h3>
                                     <p class="text-emerald-100 text-sm">
                                         Perbarui foto profile, nama, dan alamat email Anda
@@ -80,7 +48,6 @@ defineProps<{
                         </div>
                     </div>
                 </div>
-
                 <!-- Password Update Card -->
                 <div class="group transform hover:scale-[1.02] transition-all duration-300">
                     <div class="overflow-hidden bg-white shadow-xl sm:rounded-2xl border-0 ring-1 ring-gray-200/50">
@@ -102,12 +69,50 @@ defineProps<{
                             </div>
                         </div>
                         <div class="p-8 bg-gradient-to-br from-white to-gray-50">
+                            <!-- Success Notification -->
+                            <div v-if="passwordUpdateStatus === 'password-updated'" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-semibold text-green-800">
+                                            ✅ Password Berhasil Diperbarui
+                                        </h3>
+                                        <p class="text-xs text-green-700 mt-1">
+                                            Password Anda telah berhasil diubah. Pastikan untuk mengingat password baru Anda.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Error Notification -->
+                            <div v-if="passwordUpdateStatus === 'password-error'" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-semibold text-red-800">
+                                            ❌ Gagal Memperbarui Password
+                                        </h3>
+                                        <p class="text-xs text-red-700 mt-1">
+                                            Terjadi kesalahan saat mengubah password. Silakan periksa kembali password lama Anda.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <UpdatePasswordForm class="max-w-xl" />
                         </div>
                     </div>
                 </div>
 
-                <!-- Delete Account Card -->
+                <!-- Delete Account Card
                 <div class="group transform hover:scale-[1.02] transition-all duration-300">
                     <div class="overflow-hidden bg-white shadow-xl sm:rounded-2xl border-0 ring-1 ring-red-200/50">
                         <div class="bg-gradient-to-r from-red-500 to-pink-600 px-8 py-6">
@@ -131,7 +136,7 @@ defineProps<{
                             <DeleteUserForm class="max-w-xl" />
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
     </AuthenticatedLayout>

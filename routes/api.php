@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\UmkmApiController;
 use App\Http\Controllers\Api\MenuApiController;
 use App\Http\Controllers\Api\MapApiController;
+use App\Http\Controllers\Api\PasswordResetApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,9 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// Password Reset API
+Route::get('/check-reset-request', [PasswordResetApiController::class, 'checkResetStatus']);
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();

@@ -9,6 +9,17 @@ const handleDelete = (e: Event, href: string) => {
     }
 };
 
+const handleUmkmClick = (umkmId: number, event: Event) => {
+    // Prevent click when interacting with buttons or links
+    const target = event.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('[role="button"]')) {
+        return;
+    }
+    
+    // Navigate to UMKM detail page
+    router.visit(route('umkm.show', umkmId));
+};
+
 const props = defineProps<{
     umkms: Array<{
         id: number;
@@ -45,7 +56,7 @@ const props = defineProps<{
                         <h2 class="font-bold text-2xl text-white leading-tight mb-2">
                             🏢 Kelola UMKM
                         </h2>
-                        <p class="text-blue-100 text-sm">Kelola dan pantau UMKM Anda dengan mudah</p>
+                        <p class="text-blue-100 text-sm">Kelola  UMKM Anda dengan mudah</p>
                     </div>
                     <Link
                         :href="route('umkm.create')"
@@ -62,53 +73,6 @@ const props = defineProps<{
 
         <div class="py-8 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <!-- Stats Cards -->
-                        <div class="bg-white rounded-2xl shadow-lg p-6 border border-blue-100">
-                            <div class="flex items-center">
-                                <div class="p-3 bg-blue-100 rounded-full">
-                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-600">Total UMKM</p>
-                                    <p class="text-2xl font-bold text-gray-900">{{ umkms.length }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
-                            <div class="flex items-center">
-                                <div class="p-3 bg-green-100 rounded-full">
-                                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-600">UMKM Aktif</p>
-                                    <p class="text-2xl font-bold text-gray-900">{{ umkms.filter(u => u.status === 'active').length }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-2xl shadow-lg p-6 border border-purple-100">
-                            <div class="flex items-center">
-                                <div class="p-3 bg-purple-100 rounded-full">
-                                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm font-medium text-gray-600">Di Peta</p>
-                                    <p class="text-2xl font-bold text-gray-900">{{ umkms.filter(u => u.latitude && u.longitude).length }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
                 <div class="bg-white overflow-hidden shadow-lg sm:rounded-2xl border border-gray-200">
                     <div class="p-8 text-gray-900">
                         <div v-if="umkms.length === 0" class="text-center py-16">
@@ -140,7 +104,8 @@ const props = defineProps<{
                                 <div
                                     v-for="umkm in umkms"
                                     :key="umkm.id"
-                                    class="group bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:border-blue-300 transition-all duration-300 hover:-translate-y-1"
+                                    @click="handleUmkmClick(umkm.id, $event)"
+                                    class="group bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:border-blue-300 transition-all duration-300 hover:-translate-y-1 cursor-pointer active:scale-95 touch-manipulation"
                                 >
                                     <div v-if="umkm.gambar" class="h-48 overflow-hidden">
                                         <img 
@@ -207,7 +172,7 @@ const props = defineProps<{
                                             </p>
                                             
                                             <!-- Social Media Links -->
-                                            <div v-if="umkm.whatsapp || umkm.instagram || umkm.facebook || umkm.website" class="flex items-center space-x-3 pt-3 border-t border-gray-100">
+                                            <div v-if="umkm.whatsapp || umkm.instagram || umkm.facebook || umkm.website" class="flex items-center space-x-3 pt-3 border-t border-gray-100" @click.stop>
                                                 <span class="text-xs text-gray-500 font-medium">Kontak:</span>
                                                 <div class="flex space-x-2">
                                                     <a v-if="umkm.whatsapp" :href="`https://wa.me/${umkm.whatsapp}`" target="_blank" class="p-1.5 bg-green-100 text-green-600 rounded-full hover:bg-green-200 transition-colors">
@@ -234,7 +199,7 @@ const props = defineProps<{
                                             </div>
                                         </div>
 
-                                        <div class="flex space-x-3 pt-4 border-t border-gray-100">
+                                        <div class="flex space-x-3 pt-4 border-t border-gray-100" @click.stop>
                                             <Link
                                                 :href="route('umkm.show', umkm.id)"
                                                 class="flex-1 inline-flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg"

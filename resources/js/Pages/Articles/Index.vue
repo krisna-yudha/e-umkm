@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 interface Article {
     title: string;
@@ -15,12 +16,43 @@ const props = defineProps<{
     articles: Article[]
 }>();
 
+const page = usePage();
+
+// Smart navigation based on user authentication and role
+const backUrl = computed(() => {
+    // Get user from Inertia page props
+    const user = page.props.auth?.user as any;
+    
+    if (user) {
+        // User is authenticated, determine destination based on role
+        if (user.role === 'admin') {
+            return '/admin/dashboard';
+        } else {
+            return '/dashboard';
+        }
+    }
+    
+    // User is not authenticated, go to home
+    return '/';
+});
+
 const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('id-ID', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
     });
+};
+
+const handleArticleClick = (articleLink: string, event: Event) => {
+    // Prevent click when interacting with the "Baca Selengkapnya" link
+    const target = event.target as HTMLElement;
+    if (target.closest('a') || target.closest('[role="button"]')) {
+        return;
+    }
+    
+    // Open article in new tab
+    window.open(articleLink, '_blank');
 };
 
 const getCategoryColor = (category: string) => {
@@ -57,7 +89,7 @@ const getCategoryColor = (category: string) => {
                         <!-- Back Button -->
                         <div class="flex justify-start mb-6">
                             <Link 
-                                href="/" 
+                                :href="backUrl" 
                                 class="inline-flex items-center bg-white bg-opacity-20 backdrop-blur-sm text-white hover:bg-opacity-30 transition-all duration-200 p-2 rounded-lg border border-white border-opacity-30"
                             >
                                 <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +156,8 @@ const getCategoryColor = (category: string) => {
                             <article 
                                 v-for="(article, index) in articles" 
                                 :key="index" 
-                                class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                                @click="handleArticleClick(article.link, $event)"
+                                class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer active:scale-95 touch-manipulation"
                             >
                                 <!-- Article Image -->
                                 <div class="aspect-w-16 aspect-h-9 bg-gradient-to-br from-purple-100 to-blue-100">
@@ -169,6 +202,7 @@ const getCategoryColor = (category: string) => {
                                     <a 
                                         :href="article.link" 
                                         target="_blank"
+                                        @click.stop
                                         class="inline-flex items-center text-purple-600 hover:text-purple-800 font-medium text-sm transition-colors duration-200"
                                     >
                                         Baca Selengkapnya
