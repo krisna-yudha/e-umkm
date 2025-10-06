@@ -8,6 +8,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Routing\Controller as BaseController;
 
 class UmkmController extends Controller
 {
@@ -16,14 +17,22 @@ class UmkmController extends Controller
      */
     public function index()
     {
-        // User hanya bisa melihat UMKM miliknya sendiri
-        $umkms = Umkm::where('user_id', Auth::id())
-                     ->with('menus')
-                     ->orderBy('created_at', 'desc')
-                     ->get();
+        // Admin bisa melihat semua UMKM untuk monitoring
+        if (Auth::user()->role === 'admin') {
+            $umkms = Umkm::with('menus', 'user')
+                         ->orderBy('created_at', 'desc')
+                         ->get();
+        } else {
+            // User hanya bisa melihat UMKM miliknya sendiri
+            $umkms = Umkm::where('user_id', Auth::id())
+                         ->with('menus')
+                         ->orderBy('created_at', 'desc')
+                         ->get();
+        }
         
         return Inertia::render('Umkm/Index', [
-            'umkms' => $umkms
+            'umkms' => $umkms,
+            'isAdmin' => Auth::user()->role === 'admin'
         ]);
     }
 
@@ -32,6 +41,12 @@ class UmkmController extends Controller
      */
     public function create()
     {
+        // Double check: Admin tidak boleh mengakses halaman create
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Admin tidak diizinkan untuk menambahkan UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+
         return Inertia::render('Umkm/Create');
     }
 
@@ -40,6 +55,12 @@ class UmkmController extends Controller
      */
     public function store(Request $request)
     {
+        // Double check: Admin tidak boleh menyimpan UMKM
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Admin tidak diizinkan untuk menambahkan UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+
         $request->validate([
             'nama_umkm' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
@@ -83,10 +104,21 @@ class UmkmController extends Controller
             Log::info('UMKM Show Request', [
                 'umkmId' => $umkm->id,
                 'userId' => Auth::id(),
-                'umkmOwnerId' => $umkm->user_id
+                'umkmOwnerId' => $umkm->user_id,
+                'userRole' => Auth::user()->role
             ]);
 
-            // Verify ownership
+            // Admin bisa melihat semua UMKM untuk monitoring
+            if (Auth::user()->role === 'admin') {
+                $umkm->load(['menus', 'user']);
+                
+                return Inertia::render('Umkm/Show', [
+                    'umkm' => $umkm,
+                    'isAdmin' => true
+                ]);
+            }
+
+            // Verify ownership untuk user biasa
             if ($umkm->user_id !== Auth::id()) {
                 Log::warning('Unauthorized UMKM show attempt', [
                     'umkmId' => $umkm->id, 
@@ -107,7 +139,8 @@ class UmkmController extends Controller
             ]);
             
             return Inertia::render('Umkm/Show', [
-                'umkm' => $umkm
+                'umkm' => $umkm,
+                'isAdmin' => false
             ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             Log::error('UMKM Not Found', ['umkmId' => request()->route('umkm')]);
@@ -128,6 +161,12 @@ class UmkmController extends Controller
      */
     public function edit(Umkm $umkm)
     {
+        // Admin tidak boleh mengedit UMKM
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Admin tidak diizinkan untuk mengedit UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+
         // Verify ownership
         if ($umkm->user_id !== Auth::id()) {
             abort(403, 'Unauthorized');
@@ -143,6 +182,12 @@ class UmkmController extends Controller
      */
     public function update(Request $request, Umkm $umkm)
     {
+        // Admin tidak boleh mengupdate UMKM
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Admin tidak diizinkan untuk mengupdate UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+
         try {
             Log::info('Update UMKM Request', [
                 'umkmId' => $umkm->id,
@@ -216,6 +261,11 @@ class UmkmController extends Controller
      */
     public function destroy(Umkm $umkm)
     {
+        // Prevent admin from deleting UMKM
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('dashboard')->with('error', 'Admin tidak diizinkan untuk mengelola UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+        
         // Verify ownership
         if ($umkm->user_id !== Auth::id()) {
             abort(403, 'Unauthorized');

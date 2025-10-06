@@ -55,6 +55,11 @@ class User extends Authenticatable
         return $this->hasMany(Umkm::class);
     }
 
+    public function umkm()
+    {
+        return $this->hasOne(Umkm::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';

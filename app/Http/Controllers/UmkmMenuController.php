@@ -15,6 +15,18 @@ class UmkmMenuController extends Controller
     public function index($umkmId)
     {
         try {
+            // Admin bisa melihat menu dari semua UMKM untuk monitoring
+            if (Auth::user()->role === 'admin') {
+                $umkm = Umkm::with('user')->findOrFail($umkmId);
+                $menus = $umkm->menus()->orderBy('nama_menu')->get();
+
+                return Inertia::render('UmkmMenu/Index', [
+                    'umkm' => $umkm,
+                    'menus' => $menus,
+                    'isAdmin' => true
+                ]);
+            }
+            
             // Find UMKM dan pastikan user hanya bisa akses menu UMKM miliknya
             $umkm = Umkm::where('id', $umkmId)
                         ->where('user_id', Auth::id())
@@ -28,7 +40,8 @@ class UmkmMenuController extends Controller
 
             return Inertia::render('UmkmMenu/Index', [
                 'umkm' => $umkm,
-                'menus' => $menus
+                'menus' => $menus,
+                'isAdmin' => false
             ]);
         } catch (\Exception $e) {
             Log::error('UMKM Menu Index Error: ' . $e->getMessage());
@@ -38,6 +51,11 @@ class UmkmMenuController extends Controller
 
     public function create($umkmId)
     {
+        // Prevent admin from creating menu
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('dashboard')->with('error', 'Admin tidak diizinkan untuk mengelola UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+        
         try {
             // Find UMKM dan pastikan user hanya bisa tambah menu ke UMKM miliknya
             $umkm = Umkm::where('id', $umkmId)
@@ -59,6 +77,11 @@ class UmkmMenuController extends Controller
 
     public function store(Request $request, $umkmId)
     {
+        // Prevent admin from storing menu
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('dashboard')->with('error', 'Admin tidak diizinkan untuk mengelola UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+        
         try {
             // Find UMKM dan pastikan user hanya bisa tambah menu ke UMKM miliknya
             $umkm = Umkm::where('id', $umkmId)
@@ -99,6 +122,20 @@ class UmkmMenuController extends Controller
     public function show($umkmId, $menuId)
     {
         try {
+            // Admin bisa melihat semua menu untuk monitoring
+            if (Auth::user()->role === 'admin') {
+                $umkm = Umkm::with('user')->findOrFail($umkmId);
+                $menu = UmkmMenu::where('id', $menuId)
+                                ->where('umkm_id', $umkm->id)
+                                ->firstOrFail();
+
+                return Inertia::render('UmkmMenu/Show', [
+                    'umkm' => $umkm,
+                    'menu' => $menu,
+                    'isAdmin' => true
+                ]);
+            }
+            
             // Find UMKM dan menu dengan verifikasi ownership
             $umkm = Umkm::where('id', $umkmId)
                         ->where('user_id', Auth::id())
@@ -118,7 +155,8 @@ class UmkmMenuController extends Controller
 
             return Inertia::render('UmkmMenu/Show', [
                 'umkm' => $umkm,
-                'menu' => $menu
+                'menu' => $menu,
+                'isAdmin' => false
             ]);
         } catch (\Exception $e) {
             Log::error('UMKM Menu Show Error: ' . $e->getMessage());
@@ -128,6 +166,11 @@ class UmkmMenuController extends Controller
 
     public function edit($umkmId, $menuId)
     {
+        // Prevent admin from editing menu
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('dashboard')->with('error', 'Admin tidak diizinkan untuk mengelola UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+        
         try {
             // Find UMKM dan menu dengan verifikasi ownership
             $umkm = Umkm::where('id', $umkmId)
@@ -158,6 +201,11 @@ class UmkmMenuController extends Controller
 
     public function update(Request $request, $umkmId, $menuId)
     {
+        // Prevent admin from updating menu
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('dashboard')->with('error', 'Admin tidak diizinkan untuk mengelola UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+        
         try {
             Log::info('Update Menu Request', [
                 'umkmId' => $umkmId,
@@ -238,6 +286,11 @@ class UmkmMenuController extends Controller
 
     public function destroy($umkmId, $menuId)
     {
+        // Prevent admin from deleting menu
+        if (Auth::user()->role === 'admin') {
+            return redirect()->route('dashboard')->with('error', 'Admin tidak diizinkan untuk mengelola UMKM. Anda hanya bertugas monitoring dan mengawasi.');
+        }
+        
         try {
             // Find UMKM dan menu dengan verifikasi ownership
             $umkm = Umkm::where('id', $umkmId)

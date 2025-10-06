@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/umkm', [App\Http\Controllers\AdminController::class, 'umkmIndex'])->name('admin.umkm');
         Route::post('/umkm/{id}/toggle-status', [App\Http\Controllers\AdminController::class, 'toggleUmkmStatus'])->name('admin.umkm.toggle');
         Route::get('/reports', [App\Http\Controllers\AdminController::class, 'reports'])->name('admin.reports');
+        Route::get('/search', [App\Http\Controllers\AdminController::class, 'search'])->name('admin.search');
         
         // Admin Password Reset Management
         Route::get('/password-reset-requests', [App\Http\Controllers\AdminController::class, 'passwordResetRequests'])->name('admin.password-reset-requests');

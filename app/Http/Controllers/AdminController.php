@@ -220,4 +220,54 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Terjadi kesalahan saat menolak permintaan: ' . $e->getMessage());
         }
     }
+
+    public function search(Request $request)
+    {
+        // Check admin authorization
+        if (!Auth::user() || Auth::user()->role !== 'admin') {
+            return redirect()->route('dashboard')->with('error', 'Unauthorized access');
+        }
+
+        $query = $request->get('q', '');
+        
+        if (empty($query)) {
+            return response()->json([
+                'umkms' => [],
+                'users' => [],
+                'message' => 'Query pencarian tidak boleh kosong'
+            ]);
+        }
+
+        try {
+            // Search UMKM
+            $umkms = Umkm::with('user')
+                ->where('nama_umkm', 'like', '%' . $query . '%')
+                ->orWhere('kategori', 'like', '%' . $query . '%')
+                ->orWhere('alamat', 'like', '%' . $query . '%')
+                ->orWhere('deskripsi', 'like', '%' . $query . '%')
+                ->limit(10)
+                ->get();
+
+            // Search Users (role umkm only)
+            $users = User::where('role', 'umkm')
+                ->where(function($q) use ($query) {
+                    $q->where('name', 'like', '%' . $query . '%')
+                      ->orWhere('email', 'like', '%' . $query . '%');
+                })
+                ->with('umkm')
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'umkms' => $umkms,
+                'users' => $users,
+                'query' => $query
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin search error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Terjadi kesalahan saat melakukan pencarian'
+            ], 500);
+        }
+    }
 }
