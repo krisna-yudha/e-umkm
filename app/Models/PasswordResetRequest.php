@@ -36,9 +36,9 @@ class PasswordResetRequest extends Model
 
     public function generateCode(): string
     {
-        $this->code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $this->save();
-        return $this->code;
+        $code = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        $this->update(['code' => $code]);
+        return $code;
     }
 
     public function approve(int $adminId, ?string $note = null): void
@@ -49,9 +49,6 @@ class PasswordResetRequest extends Model
             'admin_note' => $note,
             'approved_at' => now(),
         ]);
-        
-        // Generate verification code when approved
-        $this->generateCode();
     }
 
     public function reject(int $adminId, ?string $note = null): void
@@ -60,6 +57,7 @@ class PasswordResetRequest extends Model
             'status' => 'rejected',
             'admin_id' => $adminId,
             'admin_note' => $note,
+            'approved_at' => now(),
         ]);
     }
 }

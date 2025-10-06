@@ -151,7 +151,7 @@ class AdminController extends Controller
         }
     }
 
-    public function approvePasswordReset(Request $request, PasswordResetRequest $resetRequest)
+    public function approvePasswordReset(Request $request, PasswordResetRequest $passwordResetRequest)
     {
         // Check admin authorization
         if (!Auth::user() || Auth::user()->role !== 'admin') {
@@ -164,26 +164,31 @@ class AdminController extends Controller
 
         try {
             // Check if request is still pending
-            if ($resetRequest->status !== 'pending') {
+            if ($passwordResetRequest->status !== 'pending') {
                 return redirect()->back()->with('error', 'Permintaan ini sudah diproses sebelumnya.');
             }
 
-            // Approve and generate code
-            $resetRequest->approve(Auth::id(), $request->note);
+            // Generate code first
+            $verificationCode = $passwordResetRequest->generateCode();
             
-            // Ensure code is generated
-            if (!$resetRequest->code) {
-                $resetRequest->generateCode();
-            }
+            // Then approve with admin info
+            $passwordResetRequest->approve(Auth::id(), $request->note);
 
-            return redirect()->back()->with('success', 'Permintaan reset password telah disetujui. Kode verifikasi: ' . $resetRequest->code);
+            Log::info('Password reset request approved', [
+                'request_id' => $passwordResetRequest->id,
+                'user_id' => $passwordResetRequest->user_id,
+                'admin_id' => Auth::id(),
+                'verification_code' => $verificationCode
+            ]);
+
+            return redirect()->back()->with('success', 'Permintaan reset password telah disetujui. Kode verifikasi: ' . $verificationCode);
         } catch (\Exception $e) {
             Log::error('Password reset approval error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyetujui permintaan.');
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menyetujui permintaan: ' . $e->getMessage());
         }
     }
 
-    public function rejectPasswordReset(Request $request, PasswordResetRequest $resetRequest)
+    public function rejectPasswordReset(Request $request, PasswordResetRequest $passwordResetRequest)
     {
         // Check admin authorization
         if (!Auth::user() || Auth::user()->role !== 'admin') {
@@ -195,11 +200,16 @@ class AdminController extends Controller
         ]);
 
         try {
-            $resetRequest->reject(Auth::id(), $request->note);
+            // Check if request is still pending
+            if ($passwordResetRequest->status !== 'pending') {
+                return redirect()->back()->with('error', 'Permintaan ini sudah diproses sebelumnya.');
+            }
+
+            $passwordResetRequest->reject(Auth::id(), $request->note);
 
             Log::info('Password reset request rejected', [
-                'request_id' => $resetRequest->id,
-                'user_id' => $resetRequest->user_id,
+                'request_id' => $passwordResetRequest->id,
+                'user_id' => $passwordResetRequest->user_id,
                 'admin_id' => Auth::id(),
                 'note' => $request->note
             ]);
@@ -207,7 +217,7 @@ class AdminController extends Controller
             return redirect()->back()->with('success', 'Permintaan reset password telah ditolak.');
         } catch (\Exception $e) {
             Log::error('Password reset rejection error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Terjadi kesalahan saat menolak permintaan.');
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menolak permintaan: ' . $e->getMessage());
         }
     }
 }

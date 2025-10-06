@@ -35,6 +35,12 @@ const props = defineProps<{
     };
 }>();
 
+// Debug: Log the received data
+console.log('Received requests data:', props.requests);
+console.log('Data array:', props.requests.data);
+console.log('Data length:', props.requests.data?.length);
+console.log('Total:', props.requests.total);
+
 const selectedRequest = ref<PasswordResetRequest | null>(null);
 const showModal = ref(false);
 const actionType = ref<'approve' | 'reject'>('approve');
@@ -44,6 +50,7 @@ const flashMessage = computed(() => {
     const flash = page.props.flash as any;
     return flash?.success || flash?.error;
 });
+
 const flashType = computed(() => {
     const flash = page.props.flash as any;
     return flash?.success ? 'success' : 'error';
@@ -79,21 +86,19 @@ const submitAction = () => {
         ? 'admin.password-reset.approve' 
         : 'admin.password-reset.reject';
 
-    console.log('Submitting action:', actionType.value, 'for request:', selectedRequest.value.id);
-    console.log('Route:', routeName);
-    console.log('Note:', noteForm.note);
-    console.log('Full route:', route(routeName, selectedRequest.value.id));
+    console.log('Debug - Route:', routeName);
+    console.log('Debug - Request ID:', selectedRequest.value.id);
+    console.log('Debug - Note:', noteForm.note);
+    console.log('Debug - Full URL:', route(routeName, { passwordResetRequest: selectedRequest.value.id }));
 
-    noteForm.post(route(routeName, selectedRequest.value.id), {
+    noteForm.post(route(routeName, { passwordResetRequest: selectedRequest.value.id }), {
         onSuccess: (page) => {
             console.log('Success response:', page);
             closeModal();
-            // Refresh the page to get updated data
             router.reload({ only: ['requests'] });
         },
         onError: (errors) => {
             console.error('Submission error:', errors);
-            // Don't close modal on error to show error messages
         },
         onFinish: () => {
             console.log('Request finished');
@@ -160,7 +165,7 @@ const formatDate = (date: string) => {
                      :class="[
                          'mb-6 p-4 rounded-xl text-sm font-medium transition-all duration-300',
                          flashType === 'success' 
-                             ? 'bg-green-50 border border-green-200 text-green-800' 
+                             ? 'bg-green-50 border border-green-200 text-green-800'
                              : 'bg-red-50 border border-red-200 text-red-800'
                      ]">
                     {{ flashMessage }}
@@ -303,7 +308,7 @@ const formatDate = (date: string) => {
                         </div>
                     </div>
 
-                    <!-- Enhanced Pagination -->
+                    <!-- Pagination -->
                     <div v-if="requests.last_page > 1" class="mt-8 flex justify-center">
                         <nav class="flex space-x-2">
                             <a v-for="page in requests.last_page" :key="page"
@@ -322,7 +327,7 @@ const formatDate = (date: string) => {
             </div>
         </div>
 
-        <!-- Enhanced Modal -->
+        <!-- Modal -->
         <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
             <div class="relative mx-auto p-8 border w-full max-w-md shadow-2xl rounded-2xl bg-white">
                 <div class="text-center mb-6">
@@ -351,58 +356,62 @@ const formatDate = (date: string) => {
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="font-semibold text-gray-900">{{ selectedRequest.user.name }}</p>
-                            <p class="text-sm text-gray-600">{{ selectedRequest.user.email }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <form @submit.prevent="submitAction" class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-3">
-                            {{ actionType === 'approve' ? '💬 Catatan (opsional)' : '📝 Alasan penolakan (wajib)' }}
-                        </label>
-                        <textarea v-model="noteForm.note"
-                                  :required="actionType === 'reject'"
-                                  rows="4"
-                                  class="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                                  :placeholder="actionType === 'approve' 
-                                      ? 'Tambahkan catatan untuk pengguna (opsional)...' 
-                                      : 'Jelaskan alasan penolakan secara detail...'">
-                        </textarea>
-                        <div v-if="noteForm.errors.note" class="mt-2 text-sm text-red-600 bg-red-50 rounded-lg p-2">
-                            {{ noteForm.errors.note }}
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end space-x-3">
-                        <button type="button" @click="closeModal"
-                                class="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium">
-                            Batal
-                        </button>
-                        <button type="submit"
-                                :disabled="noteForm.processing"
-                                :class="[
-                                    'px-6 py-2 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg',
-                                    actionType === 'approve' 
-                                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white' 
-                                        : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white',
-                                    noteForm.processing ? 'opacity-50 cursor-not-allowed' : ''
-                                ]">
-                            <span v-if="noteForm.processing">
-                                {{ actionType === 'approve' ? 'Menyetujui...' : 'Menolak...' }}
-                            </span>
-                            <span v-else>
-                                {{ actionType === 'approve' ? '✅ Setujui' : '❌ Tolak' }}
-                            </span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </AuthenticatedLayout>
-</template>
+                                                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                                            </svg>
+                                                        </div>
+                                                        <div>
+                                                            <p class="font-semibold text-gray-900">{{ selectedRequest.user.name }}</p>
+                                                            <p class="text-sm text-gray-600">{{ selectedRequest.user.email }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                
+                                                <form @submit.prevent="submitAction">
+                                                    <div class="mb-6">
+                                                        <label for="note" class="block text-sm font-semibold text-gray-700 mb-2">
+                                                            {{ actionType === 'approve' ? '💬 Catatan (Opsional)' : '📝 Alasan Penolakan (Wajib)' }}
+                                                        </label>
+                                                        <textarea
+                                                            id="note"
+                                                            v-model="noteForm.note"
+                                                            :required="actionType === 'reject'"
+                                                            rows="4"
+                                                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                                                            :placeholder="actionType === 'approve' 
+                                                                ? 'Tambahkan catatan jika diperlukan...' 
+                                                                : 'Jelaskan mengapa permintaan ini ditolak...'"
+                                                        ></textarea>
+                                                        <div v-if="noteForm.errors.note" class="mt-2 text-sm text-red-600">
+                                                            {{ noteForm.errors.note }}
+                                                        </div>
+                                                    </div>
+                                
+                                                    <div class="flex space-x-3">
+                                                        <button
+                                                            type="button"
+                                                            @click="closeModal"
+                                                            class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-all duration-200"
+                                                        >
+                                                            🚫 Batal
+                                                        </button>
+                                                        <button
+                                                            type="submit"
+                                                            :disabled="noteForm.processing"
+                                                            :class="[
+                                                                'flex-1 px-4 py-3 font-semibold rounded-xl transition-all duration-200 disabled:opacity-50',
+                                                                actionType === 'approve' 
+                                                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700' 
+                                                                    : 'bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700'
+                                                            ]"
+                                                        >
+                                                            <span v-if="!noteForm.processing">
+                                                                {{ actionType === 'approve' ? '✅ Setujui' : '❌ Tolak' }}
+                                                            </span>
+                                                            <span v-else>⏳ Memproses...</span>
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </AuthenticatedLayout>
+                                </template>
