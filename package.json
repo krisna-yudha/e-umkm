@@ -26,7 +26,9 @@
     },
     "dependencies": {
         "@vue-leaflet/vue-leaflet": "^0.10.1",
+        "chart.js": "^4.5.0",
         "leaflet": "^1.9.4",
+        "vue-chartjs": "^5.3.2",
         "vue-leaflet": "^0.1.0"
     }
 }

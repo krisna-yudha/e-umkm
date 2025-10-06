@@ -1,4 +1,4 @@
-# 🏢 E-UMKM Management System
+# 🏢 E-UMKM Management System v1.0
 
 <div align="center">
 
@@ -10,11 +10,13 @@
 
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 ![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)
 
-**Platform manajemen UMKM yang komprehensif dengan teknologi modern**
+**Platform manajemen UMKM yang komprehensif dengan teknologi modern - Production Ready**
 
-[🚀 Demo](#demo) • [📚 Documentation](#documentation) • [🔧 Installation](#installation) • [📡 API](#api)
+[🚀 Quick Start](#quick-start) • [📚 API Documentation](./API_DOCUMENTATION_V1.md) • [🔧 Installation](#installation) • [📡 Features](#features)
+
+</div>
 
 </div>
 

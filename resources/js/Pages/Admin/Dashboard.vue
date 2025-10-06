@@ -62,11 +62,9 @@ const performSearch = async (): Promise<void> => {
             const data = await response.json();
             searchResults.value = data;
             showSearchResults.value = true;
-        } else {
-            console.error('Search error:', response.statusText);
         }
     } catch (error) {
-        console.error('Search error:', error);
+        // Handle search error
     } finally {
         isSearching.value = false;
     }

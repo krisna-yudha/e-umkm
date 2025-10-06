@@ -36,7 +36,7 @@ const directToggle = (umkm: any) => {
             // Success handled by page reload
         },
         onError: (errors) => {
-            console.error('Toggle error:', errors);
+            // Handle toggle error
         }
     });
 };
@@ -50,7 +50,7 @@ const confirmToggle = () => {
                 selectedUmkm.value = null;
             },
             onError: (errors) => {
-                console.error('Toggle error:', errors);
+                // Handle toggle error
                 alert('Terjadi kesalahan saat mengubah status UMKM');
             }
         });

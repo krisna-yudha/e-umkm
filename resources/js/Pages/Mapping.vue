@@ -353,7 +353,7 @@ onMounted(async () => {
             if (map.dragging) {
                 map.dragging.enable();
             }
-            console.log('Map dragging enabled:', map.dragging.enabled());
+            // Map dragging enabled check
         }, 1000);
 
         // Function to create custom UMKM icon with profile image
@@ -363,31 +363,37 @@ onMounted(async () => {
             return L.divIcon({
                 className: 'custom-umkm-marker',
                 html: `
-                    <div class="relative group">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-xl border-3 border-white overflow-hidden">
+                    <div class="relative group transform transition-transform duration-200 hover:scale-110">
+                        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-xl border-3 border-white overflow-hidden ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-300 transition-all duration-200">
                             ${hasImage ? 
-                                `<img src="/storage/${umkm.gambar}" alt="${umkm.nama_umkm}" class="w-full h-full object-cover rounded-full" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>` :
+                                `<img src="/storage/${umkm.gambar}" alt="${umkm.nama_umkm}" class="w-full h-full object-cover rounded-full transition-transform duration-200 group-hover:scale-110" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>` :
                                 ''
                             }
                             <div class="${hasImage ? 'hidden' : 'flex'} w-full h-full items-center justify-center">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                 </svg>
                             </div>
                         </div>
-                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-3 border-r-3 border-t-6 border-transparent border-t-purple-600"></div>
+                        <!-- Animated pointer -->
+                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-8 border-transparent border-t-purple-600 drop-shadow-lg"></div>
                         
-                        <!-- UMKM Name Label -->
-                        <div class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                            <div class="bg-white text-gray-800 text-xs font-semibold px-2 py-1 rounded-md shadow-lg border border-gray-200 max-w-32 truncate">
+                        <!-- UMKM Name Label with improved styling -->
+                        <div class="absolute -bottom-10 left-1/2 transform -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 ease-in-out">
+                            <div class="bg-white text-gray-800 text-xs font-semibold px-3 py-2 rounded-lg shadow-lg border border-gray-200 max-w-40 truncate relative">
                                 ${umkm.nama_umkm}
+                                <!-- Small arrow pointing up -->
+                                <div class="absolute -top-1 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-b-2 border-transparent border-b-white"></div>
                             </div>
                         </div>
+                        
+                        <!-- Pulse animation for active UMKM -->
+                        <div class="absolute inset-0 w-14 h-14 rounded-full border-2 border-blue-400 animate-ping opacity-20"></div>
                     </div>
                 `,
-                iconSize: [48, 56],
-                iconAnchor: [24, 56],
-                popupAnchor: [0, -56]
+                iconSize: [56, 64],
+                iconAnchor: [28, 64],
+                popupAnchor: [0, -64]
             });
         };
 
@@ -397,61 +403,84 @@ onMounted(async () => {
                 const customIcon = createUmkmIcon(umkm);
                 const marker = L.marker([umkm.latitude, umkm.longitude], { icon: customIcon }).addTo(map);
                 
+                // Add click event to marker for navigation
+                marker.on('click', () => {
+                    // Optional: You can add direct navigation here
+                    // window.location.href = `/umkm/${umkm.id}`;
+                });
+                
                 const popupContent = `
-                    <div class="max-w-sm">
-                        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-t-lg">
-                            <div class="flex items-center space-x-3">
-                                ${umkm.gambar ? 
-                                    `<img src="/storage/${umkm.gambar}" alt="${umkm.nama_umkm}" class="w-10 h-10 rounded-full border-2 border-white object-cover" onerror="this.style.display='none'"/>` :
-                                    `<div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                        </svg>
-                                    </div>`
-                                }
-                                <div>
-                                    <h3 class="font-bold text-lg mb-1">${umkm.nama_umkm}</h3>
-                                    <p class="text-blue-100 text-sm">👤 ${umkm.user.name}</p>
-                                </div>
+                    <div class="max-w-sm bg-white rounded-lg overflow-hidden shadow-lg">
+                        <!-- Header dengan gambar atau icon -->
+                        <div class="relative">
+                            ${umkm.gambar ? 
+                                `<img src="/storage/${umkm.gambar}" alt="${umkm.nama_umkm}" class="w-full h-32 object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />` :
+                                ''
+                            }
+                            <div class="${umkm.gambar ? 'hidden' : 'block'} w-full h-32 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                </svg>
+                            </div>
+                            <!-- Kategori badge -->
+                            <div class="absolute top-3 left-3">
+                                <span class="bg-white text-blue-700 text-xs px-3 py-1.5 rounded-full font-bold shadow-lg border-2 border-blue-100">${umkm.kategori}</span>
                             </div>
                         </div>
-                        <div class="bg-white p-4 rounded-b-lg shadow-lg">
-                            <div class="flex items-center mb-2">
-                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">${umkm.kategori}</span>
+                        
+                        <!-- Content -->
+                        <div class="p-4">
+                            <!-- UMKM Name & Owner -->
+                            <div class="mb-3">
+                                <h3 class="font-bold text-lg text-gray-900 mb-1 leading-tight">${umkm.nama_umkm}</h3>
+                                <p class="text-gray-600 text-sm flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    ${umkm.user.name}
+                                </p>
                             </div>
-                            ${umkm.deskripsi ? `<p class="text-gray-700 text-sm mb-3 leading-relaxed">${umkm.deskripsi}</p>` : ''}
-                            <div class="space-y-2">
+                            
+                            <!-- Description -->
+                            ${umkm.deskripsi ? `<p class="text-gray-700 text-sm mb-3 leading-relaxed line-clamp-2">${umkm.deskripsi}</p>` : ''}
+                            
+                            <!-- Contact Info -->
+                            <div class="space-y-2 mb-4">
                                 <div class="flex items-start">
-                                    <svg class="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 text-gray-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                                     </svg>
-                                    <p class="text-sm text-gray-600">${umkm.alamat}</p>
+                                    <span class="text-gray-700 text-sm leading-relaxed">${umkm.alamat}</span>
                                 </div>
                                 ${umkm.no_telepon ? `
                                 <div class="flex items-center">
-                                    <svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 text-gray-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                                     </svg>
-                                    <a href="tel:${umkm.no_telepon}" class="text-sm text-blue-600 hover:text-blue-800">${umkm.no_telepon}</a>
+                                    <a href="tel:${umkm.no_telepon}" class="text-green-600 hover:text-green-800 font-medium text-sm">${umkm.no_telepon}</a>
                                 </div>
                                 ` : ''}
-                                ${umkm.email ? `
-                                <div class="flex items-center">
-                                    <svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </div>
+                            
+                            <!-- Action Button -->
+                            <div class="pt-3 border-t border-gray-200">
+                                <a href="/umkm-public/${umkm.id}" class="w-full inline-flex items-center justify-center px-4 py-3 bg-white text-blue-600 text-sm font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
-                                    <a href="mailto:${umkm.email}" class="text-sm text-blue-600 hover:text-blue-800">${umkm.email}</a>
-                                </div>
-                                ` : ''}
+                                    Lihat Detail
+                                </a>
                             </div>
                         </div>
                     </div>
                 `;
                 
                 marker.bindPopup(popupContent, {
-                    maxWidth: 300,
-                    className: 'custom-popup'
+                    maxWidth: 320,
+                    minWidth: 280,
+                    className: 'custom-popup-enhanced'
                 });
                 
                 // Add tooltip with UMKM name
@@ -508,24 +537,11 @@ onMounted(async () => {
         
         // Add event listeners to debug dragging
         map.on('dragstart', () => {
-            console.log('Map drag started');
-        });
-        
-        map.on('drag', () => {
-            console.log('Map dragging...');
-        });
-        
-        map.on('dragend', () => {
-            console.log('Map drag ended');
-        });
-        
-        map.on('mousedown', () => {
-            console.log('Mouse down on map');
+            // Map drag events
         });
         
         // Final check
-        console.log('Map initialized with dragging:', map.dragging ? map.dragging.enabled() : 'dragging object not found');
-        console.log('Map centered on Semarang:', [-6.9664, 110.4204]);
+        // Map initialized successfully
         
         // Close search results when clicking outside
         document.addEventListener('click', (e) => {
@@ -864,20 +880,45 @@ onMounted(async () => {
     border-top-color: rgba(16, 185, 129, 0.95) !important;
 }
 
-/* Enhanced UMKM marker styling */
+/* Enhanced UMKM marker styling with hover effects */
+.custom-umkm-marker .group {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.custom-umkm-marker .group:hover {
+    z-index: 1000;
+}
+
 .custom-umkm-marker img {
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.3s ease-in-out;
 }
 
 .custom-umkm-marker:hover img {
     transform: scale(1.1);
 }
 
-/* UMKM name label styling */
-.custom-umkm-marker .group:hover > div:last-child {
+/* UMKM name label styling with smooth animations */
+.custom-umkm-marker .group:hover > div:nth-child(3) {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
-    transition: all 0.2s ease-in-out;
+    transform: translateX(-50%) translateY(0) scale(1);
+    transition: all 0.3s ease-in-out;
+}
+
+/* Pulse animation for markers */
+@keyframes marker-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.2;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.1;
+    }
+}
+
+.custom-umkm-marker .animate-ping {
+    animation: marker-pulse 2s infinite;
 }
 
 /* Animation for user location marker */
@@ -893,6 +934,61 @@ onMounted(async () => {
 }
 
 /* Popup styling */
+.custom-popup-enhanced .leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    pointer-events: auto !important;
+    background: white;
+    overflow: hidden;
+}
+
+.custom-popup-enhanced .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+    pointer-events: auto !important;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.custom-popup-enhanced .leaflet-popup-tip {
+    background: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.custom-popup-enhanced .leaflet-popup-close-button {
+    pointer-events: auto !important;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    color: #6b7280;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.custom-popup-enhanced .leaflet-popup-close-button:hover {
+    background: #f3f4f6;
+    color: #374151;
+    transform: scale(1.1);
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .custom-popup .leaflet-popup-content-wrapper {
     border-radius: 12px;
     padding: 0;

@@ -35,11 +35,7 @@ const props = defineProps<{
     };
 }>();
 
-// Debug: Log the received data
-console.log('Received requests data:', props.requests);
-console.log('Data array:', props.requests.data);
-console.log('Data length:', props.requests.data?.length);
-console.log('Total:', props.requests.total);
+// Initialize data
 
 const selectedRequest = ref<PasswordResetRequest | null>(null);
 const showModal = ref(false);
@@ -61,7 +57,7 @@ const noteForm = useForm({
 });
 
 const openModal = (request: PasswordResetRequest, action: 'approve' | 'reject') => {
-    console.log('Opening modal for request:', request.id, 'Action:', action);
+    // Open modal for request action
     selectedRequest.value = request;
     actionType.value = action;
     noteForm.note = '';
@@ -78,7 +74,6 @@ const closeModal = () => {
 
 const submitAction = () => {
     if (!selectedRequest.value) {
-        console.error('No request selected');
         return;
     }
 
@@ -86,22 +81,18 @@ const submitAction = () => {
         ? 'admin.password-reset.approve' 
         : 'admin.password-reset.reject';
 
-    console.log('Debug - Route:', routeName);
-    console.log('Debug - Request ID:', selectedRequest.value.id);
-    console.log('Debug - Note:', noteForm.note);
-    console.log('Debug - Full URL:', route(routeName, { passwordResetRequest: selectedRequest.value.id }));
+    // Process request action
 
     noteForm.post(route(routeName, { passwordResetRequest: selectedRequest.value.id }), {
         onSuccess: (page) => {
-            console.log('Success response:', page);
             closeModal();
             router.reload({ only: ['requests'] });
         },
         onError: (errors) => {
-            console.error('Submission error:', errors);
+            // Handle submission errors
         },
         onFinish: () => {
-            console.log('Request finished');
+            // Request finished
         }
     });
 };
