@@ -60,20 +60,12 @@ const removeNewImage = () => {
 };
 
 const submit = () => {
-    // Create new form data with _method for Laravel
-    const updateForm = useForm({
-        _method: 'PUT',
-        nama_menu: form.nama_menu,
-        deskripsi: form.deskripsi,
-        harga: form.harga,
-        kategori_menu: form.kategori_menu,
-        tersedia: form.tersedia,
-        gambar_menu: form.gambar_menu
-    });
-
-    // Use POST to the update route (Laravel will recognize _method)
-    updateForm.post(route('umkm.menu.update', [props.umkm.id, props.menu.id]), {
-        forceFormData: true,
+    // Always use POST with _method: PUT for Laravel method spoofing
+    // This ensures consistent handling regardless of file upload
+    form.transform((data) => ({
+        ...data,
+        _method: 'PUT'
+    })).post(route('umkm.menu.update', [props.umkm.id, props.menu.id]), {
         preserveScroll: true,
         onSuccess: () => {
             // Reset file input and preview on success

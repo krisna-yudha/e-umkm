@@ -255,6 +255,12 @@ class UmkmMenuController extends Controller
 
             // Handle boolean field properly
             $validated['tersedia'] = $request->has('tersedia') ? (bool)$request->tersedia : true;
+            
+            // Remove gambar_menu from validated data if no file was uploaded
+            // This prevents overwriting existing image with null
+            if (!$request->hasFile('gambar_menu')) {
+                unset($validated['gambar_menu']);
+            }
 
             Log::info('Validation passed', ['validated' => $validated]);
 

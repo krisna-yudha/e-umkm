@@ -1,12 +1,40 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
-const handleDelete = (e: Event, href: string) => {
+// Modal state for delete confirmation
+const showDeleteModal = ref(false);
+const selectedUmkm = ref<{ href: string; name: string } | null>(null);
+const isDeleting = ref(false);
+
+const handleDelete = (e: Event, href: string, umkmName: string) => {
     e.preventDefault();
-    if (window.confirm('Apakah Anda yakin ingin menghapus UMKM ini?')) {
-        router.delete(href);
-    }
+    selectedUmkm.value = { href, name: umkmName };
+    showDeleteModal.value = true;
+};
+
+const confirmDelete = () => {
+    if (!selectedUmkm.value) return;
+    
+    isDeleting.value = true;
+    router.delete(selectedUmkm.value.href, {
+        onSuccess: () => {
+            showDeleteModal.value = false;
+            selectedUmkm.value = null;
+        },
+        onError: () => {
+            alert('Gagal menghapus UMKM. Silakan coba lagi.');
+        },
+        onFinish: () => {
+            isDeleting.value = false;
+        }
+    });
+};
+
+const cancelDelete = () => {
+    showDeleteModal.value = false;
+    selectedUmkm.value = null;
 };
 
 const handleUmkmClick = (umkmId: number, event: Event) => {
@@ -105,85 +133,65 @@ const props = defineProps<{
                                     v-for="umkm in umkms"
                                     :key="umkm.id"
                                     @click="handleUmkmClick(umkm.id, $event)"
-                                    class="group bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl hover:border-blue-300 transition-all duration-300 hover:-translate-y-1 cursor-pointer active:scale-[0.99] touch-manipulation"
+                                    class="group bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-200 cursor-pointer"
                                 >
-                                    <div class="flex">
+                                    <div class="flex items-center p-4">
                                         <!-- Image Section -->
-                                        <div class="w-32 h-32 flex-shrink-0">
-                                            <div v-if="umkm.gambar" class="h-full overflow-hidden">
+                                        <div class="w-16 h-16 flex-shrink-0 mr-4">
+                                            <div v-if="umkm.gambar" class="h-full w-full overflow-hidden rounded-lg">
                                                 <img 
                                                     :src="`/storage/${umkm.gambar}`" 
                                                     :alt="umkm.nama_umkm"
                                                     class="w-full h-full object-cover"
                                                 />
                                             </div>
-                                            <div v-else class="relative h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center overflow-hidden">
-                                                <div class="absolute inset-0 bg-black bg-opacity-10"></div>
-                                                <div class="text-center text-white z-10">
-                                                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-1 backdrop-blur-sm">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                                        </svg>
-                                                    </div>
-                                                    <p class="text-xs opacity-90 font-medium">Foto</p>
-                                                </div>
+                                            <div v-else class="relative h-full w-full bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                                </svg>
                                             </div>
                                         </div>
 
                                         <!-- Content Section -->
-                                        <div class="flex-1 p-4">
-                                            <div class="flex justify-between items-start mb-2">
-                                                <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 leading-tight">{{ umkm.nama_umkm }}</h3>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between mb-1">
+                                                <h3 class="text-base font-semibold text-gray-900 truncate">{{ umkm.nama_umkm }}</h3>
                                                 <span 
                                                     :class="{
-                                                        'bg-green-100 text-green-800 border-green-200': umkm.status === 'active',
-                                                        'bg-red-100 text-red-800 border-red-200': umkm.status === 'inactive',
-                                                        'bg-yellow-100 text-yellow-800 border-yellow-200': umkm.status === 'pending'
+                                                        'bg-green-100 text-green-700': umkm.status === 'active',
+                                                        'bg-red-100 text-red-700': umkm.status === 'inactive',
+                                                        'bg-yellow-100 text-yellow-700': umkm.status === 'pending'
                                                     }"
-                                                    class="px-2 py-1 text-xs font-semibold rounded-full border backdrop-blur-sm"
+                                                    class="px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ml-2"
                                                 >
-                                                    {{ umkm.status === 'active' ? '✓ Aktif' : umkm.status === 'inactive' ? '✗ Nonaktif' : '🕐 Pending' }}
+                                                    {{ umkm.status === 'active' ? 'Aktif' : umkm.status === 'inactive' ? 'Nonaktif' : 'Pending' }}
                                                 </span>
                                             </div>
                                             
-                                            <div class="flex items-center text-sm text-gray-600 mb-2">
-                                                <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div class="flex items-center text-sm text-gray-600 mb-1">
+                                                <svg class="w-4 h-4 mr-1 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                                 </svg>
-                                                <span class="font-medium">{{ umkm.kategori || 'Kategori belum diisi' }}</span>
+                                                <span class="truncate">{{ umkm.kategori || 'Kategori belum diisi' }}</span>
                                             </div>
                                             
-                                            <div class="flex items-center text-sm text-gray-600 mb-2">
-                                                <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div class="flex items-center text-sm text-gray-600">
+                                                <svg class="w-4 h-4 mr-1 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                                                 </svg>
                                                 <span class="truncate">{{ umkm.alamat || 'Alamat belum diisi' }}</span>
                                             </div>
+                                        </div>
 
-                                            <!-- Contact Info in horizontal layout -->
-                                            <div class="flex items-center justify-between">
-                                                <div class="flex items-center text-sm text-gray-600">
-                                                    <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                                                    </svg>
-                                                    <span>{{ umkm.no_telepon || 'Telepon belum diisi' }}</span>
-                                                </div>
-
-                                                <!-- Action buttons in horizontal layout -->
-                                                <div class="flex space-x-2" @click.stop>
-                                                    <Link
-                                                        :href="route('umkm.show', umkm.id)"
-                                                        class="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
-                                                    >
-                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                        </svg>
-                                                        Lihat Detail
-                                                    </Link>
-                                                </div>
-                                            </div>
+                                        <!-- Action Button -->
+                                        <div class="flex-shrink-0 ml-4" @click.stop>
+                                            <Link
+                                                :href="route('umkm.show', umkm.id)"
+                                                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+                                            >
+                                                Lihat Detail
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>

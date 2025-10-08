@@ -57,15 +57,21 @@ let currentLocationMarker: any = null;
 let searchTimeout: any = null;
 
 const submit = () => {
-    // Use forceFormData only when there's a file upload
-    if (form.gambar && form.gambar instanceof File) {
-        form.put(route('umkm.update', props.umkm.id), {
-            forceFormData: true
-        });
-    } else {
-        // For regular updates without file, use normal PUT
-        form.put(route('umkm.update', props.umkm.id));
-    }
+    // Always use POST with _method: PUT for Laravel method spoofing
+    // This ensures consistent handling regardless of file upload
+    form.transform((data) => ({
+        ...data,
+        _method: 'PUT'
+    })).post(route('umkm.update', props.umkm.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            // Handle success
+        },
+        onError: (errors) => {
+            // Handle validation errors
+            console.log('Validation errors:', errors);
+        }
+    });
 };
 
 const handleImageChange = (e: Event) => {
