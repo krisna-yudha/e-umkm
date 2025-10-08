@@ -17,6 +17,7 @@ const props = defineProps<{
         gambar: string;
         user: {
             name: string;
+            profile_photo?: string;
         };
     }>;
     auth?: {
@@ -25,6 +26,7 @@ const props = defineProps<{
             name: string;
             email: string;
             role: string;
+            profile_photo?: string;
         };
     };
 }>();
@@ -421,13 +423,22 @@ onMounted(async () => {
                         <div class="p-4">
                             <!-- UMKM Name & Owner -->
                             <div class="mb-3">
-                                <h3 class="font-bold text-lg text-gray-900 mb-1 leading-tight">${umkm.nama_umkm}</h3>
-                                <p class="text-gray-600 text-sm flex items-center">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                    </svg>
-                                    ${umkm.user.name}
-                                </p>
+                                <h3 class="font-bold text-lg text-gray-900 mb-2 leading-tight">${umkm.nama_umkm}</h3>
+                                <div class="flex items-center space-x-2">
+                                    ${umkm.user.profile_photo ? 
+                                        `<img src="/storage/${umkm.user.profile_photo}" alt="${umkm.user.name}" class="w-8 h-8 rounded-full object-cover border-2 border-gray-200" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"/>` :
+                                        ''
+                                    }
+                                    <div class="${umkm.user.profile_photo ? 'hidden' : 'flex'} w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full items-center justify-center border-2 border-gray-200">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-gray-800 text-sm font-medium">${umkm.user.name}</p>
+                                        <p class="text-purple-600 text-xs font-semibold">👑 Pelaku UMKM</p>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Description -->

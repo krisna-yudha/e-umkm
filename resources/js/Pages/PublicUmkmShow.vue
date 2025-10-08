@@ -41,6 +41,7 @@ interface Umkm {
     user: {
         name: string;
         email: string;
+        profile_photo?: string;
     };
     menus: UmkmMenu[];
 }
@@ -153,10 +154,28 @@ const formatDate = (date: string) => {
                                     <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Informasi Dasar</h3>
                                     <div class="space-y-3">
                                         <div class="flex items-start">
-                                            <span class="w-4 h-4 text-gray-400 mt-1 mr-3">👤</span>
-                                            <div class="min-w-0 flex-1">
-                                                <p class="text-sm text-gray-500">Pemilik</p>
-                                                <p class="font-medium text-gray-900 break-words">{{ umkm.user.name }}</p>
+                                            <div class="flex items-center space-x-3 w-full">
+                                                <!-- Profile Photo or Avatar -->
+                                                <div class="flex-shrink-0">
+                                                    <img v-if="umkm.user.profile_photo" 
+                                                         :src="`/storage/${umkm.user.profile_photo}`" 
+                                                         :alt="umkm.user.name"
+                                                         class="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                                    />
+                                                    <div v-else 
+                                                         class="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center border-2 border-gray-200">
+                                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- User Info -->
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="text-sm text-gray-500">Pemilik</p>
+                                                    <p class="font-medium text-gray-900 break-words">{{ umkm.user.name }}</p>
+                                                    <p class="text-xs text-purple-600 font-semibold mt-1">👑 Pelaku UMKM</p>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="flex items-start">

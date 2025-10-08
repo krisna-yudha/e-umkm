@@ -38,7 +38,7 @@ class DashboardController extends Controller
     public function mapping()
     {
         // Get all active UMKM with location data for mapping
-        $umkms = Umkm::with('user')
+        $umkms = Umkm::with(['user:id,name,profile_photo'])
                     ->where('status', 'active')
                     ->whereNotNull('latitude')
                     ->whereNotNull('longitude')
@@ -61,7 +61,7 @@ class DashboardController extends Controller
                 'no_telepon', 'email', 'user_id', 'gambar', 'status'
             ])
             ->with([
-                'user:id,name',
+                'user:id,name,profile_photo',
                 'menus' => function($query) {
                     $query->where('tersedia', true)
                           ->select('id', 'umkm_id', 'nama_menu', 'harga', 'kategori_menu')
@@ -97,7 +97,7 @@ class DashboardController extends Controller
     public function publicUmkmShow(Umkm $umkm)
     {
         // Load UMKM with user and all menus for public viewing
-        $umkm->load(['user:id,name,email', 'menus' => function($query) {
+        $umkm->load(['user:id,name,email,profile_photo', 'menus' => function($query) {
             $query->orderBy('kategori_menu')->orderBy('nama_menu');
         }]);
 
