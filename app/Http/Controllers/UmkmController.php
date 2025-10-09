@@ -75,7 +75,8 @@ class UmkmController extends Controller
             'instagram' => 'nullable|string|max:255',
             'twitter' => 'nullable|string|max:255',
             'whatsapp' => 'nullable|string|max:20',
-            'website' => 'nullable|url|max:255'
+            'website' => 'nullable|url|max:255',
+            'operating_hours' => 'nullable|array'
         ]);
 
         $data = $request->except(['_token']);
@@ -217,7 +218,8 @@ class UmkmController extends Controller
                 'instagram' => 'nullable|string|max:255',
                 'twitter' => 'nullable|string|max:255',
                 'whatsapp' => 'nullable|string|max:20',
-                'website' => 'nullable|url|max:255'
+                'website' => 'nullable|url|max:255',
+                'operating_hours' => 'nullable|array'
             ]);
 
             Log::info('UMKM validation passed');
@@ -289,5 +291,24 @@ class UmkmController extends Controller
         $umkm->delete();
 
         return redirect()->route('umkm.index')->with('success', 'UMKM berhasil dihapus!');
+    }
+
+    /**
+     * Toggle the status of the specified UMKM.
+     */
+    public function toggleStatus(Umkm $umkm)
+    {
+        // Verify ownership - only owner can toggle their UMKM status
+        if ($umkm->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
+        
+        // Toggle status
+        $umkm->status = $umkm->status === 'active' ? 'inactive' : 'active';
+        $umkm->save();
+        
+        $statusText = $umkm->status === 'active' ? 'diaktifkan' : 'dinonaktifkan';
+        
+        return redirect()->back()->with('success', "UMKM berhasil {$statusText}!");
     }
 }

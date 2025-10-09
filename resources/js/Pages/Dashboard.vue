@@ -194,9 +194,9 @@ onMounted(() => {
                                 :href="route('user.profile')"
                                 class="inline-flex items-center justify-center px-6 py-3 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl font-semibold text-sm text-white hover:bg-opacity-30 transition-all duration-200"
                             >
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <!-- <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg>
+                                </svg> -->
                                 Mulai Kelola UMKM
                             </Link>
                             <Link 

@@ -4,6 +4,9 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import SimpleImageCompressor from '@/Components/SimpleImageCompressor.vue';
+import OperatingHours from '@/Components/OperatingHours.vue';
+import Notification from '@/Components/Notification.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 
@@ -24,6 +27,7 @@ interface Umkm {
     twitter?: string;
     whatsapp?: string;
     website?: string;
+    operating_hours?: any;
 }
 
 const props = defineProps<{
@@ -45,6 +49,15 @@ const form = useForm({
     twitter: props.umkm.twitter || '',
     whatsapp: props.umkm.whatsapp || '',
     website: props.umkm.website || '',
+    operating_hours: props.umkm.operating_hours || {
+        monday: { is_open: false, open_time: '09:00', close_time: '17:00' },
+        tuesday: { is_open: false, open_time: '09:00', close_time: '17:00' },
+        wednesday: { is_open: false, open_time: '09:00', close_time: '17:00' },
+        thursday: { is_open: false, open_time: '09:00', close_time: '17:00' },
+        friday: { is_open: false, open_time: '09:00', close_time: '17:00' },
+        saturday: { is_open: false, open_time: '09:00', close_time: '17:00' },
+        sunday: { is_open: false, open_time: '09:00', close_time: '17:00' }
+    }
 });
 
 const mapContainer = ref<HTMLElement>();
@@ -52,8 +65,12 @@ const searchQuery = ref('');
 const searchResults = ref<any[]>([]);
 const isSearching = ref(false);
 const showSearchResults = ref(false);
+const currentLocationMarker = ref<any>(null);
+const showImageCropper = ref(false);
+const showNotification = ref(false);
+const notificationType = ref<'success' | 'error' | 'warning'>('success');
+const notificationMessage = ref('');
 let map: any = null;
-let currentLocationMarker: any = null;
 let searchTimeout: any = null;
 
 const submit = () => {
@@ -65,10 +82,14 @@ const submit = () => {
     })).post(route('umkm.update', props.umkm.id), {
         preserveScroll: true,
         onSuccess: () => {
-            // Handle success
+            showNotification.value = true;
+            notificationType.value = 'success';
+            notificationMessage.value = 'UMKM berhasil diperbarui!';
         },
         onError: (errors) => {
-            // Handle validation errors
+            showNotification.value = true;
+            notificationType.value = 'error';
+            notificationMessage.value = 'Terjadi kesalahan saat memperbarui UMKM';
             console.log('Validation errors:', errors);
         }
     });
@@ -77,8 +98,46 @@ const submit = () => {
 const handleImageChange = (e: Event) => {
     const target = e.target as HTMLInputElement;
     if (target.files && target.files[0]) {
-        form.gambar = target.files[0];
+        const file = target.files[0];
+        form.gambar = file;
+        
+        // Always show cropper for any image upload so users can crop/compress
+        showImageCropper.value = true;
     }
+};
+
+const handleCroppedImage = (croppedFile: File) => {
+    form.gambar = croppedFile;
+    showImageCropper.value = false;
+};
+
+const handleCropperCancel = () => {
+    showImageCropper.value = false;
+    // Reset file input
+    const fileInput = document.getElementById('gambar') as HTMLInputElement;
+    if (fileInput) {
+        fileInput.value = '';
+    }
+};
+
+const handleCropperSuccess = (message: string) => {
+    showNotification.value = true;
+    notificationType.value = 'success';
+    notificationMessage.value = message;
+};
+
+const handleCropperError = (message: string) => {
+    showNotification.value = true;
+    notificationType.value = 'error';
+    notificationMessage.value = message;
+};
+
+const handleOperatingHoursChange = (hours: any) => {
+    form.operating_hours = hours;
+};
+
+const closeNotification = () => {
+    showNotification.value = false;
 };
 
 const getCurrentLocation = () => {
@@ -94,15 +153,33 @@ const getCurrentLocation = () => {
                 if (map) {
                     map.setView([lat, lng], 15);
                     
-                    if (currentLocationMarker) {
-                        map.removeLayer(currentLocationMarker);
+                    if (currentLocationMarker.value) {
+                        map.removeLayer(currentLocationMarker.value);
                     }
                     
                     const L = window.L;
-                    currentLocationMarker = L.marker([lat, lng])
+                    currentLocationMarker.value = L.marker([lat, lng], { draggable: true })
                         .addTo(map)
                         .bindPopup('Lokasi UMKM Anda')
                         .openPopup();
+                    
+                    // Add drag event listener
+                    currentLocationMarker.value.on('dragend', function(e: any) {
+                        const position = e.target.getLatLng();
+                        form.latitude = position.lat.toString();
+                        form.longitude = position.lng.toString();
+                        
+                        // Update address when marker is dragged
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}&addressdetails=1`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.display_name) {
+                                    searchQuery.value = data.display_name;
+                                    form.alamat = data.display_name;
+                                }
+                            })
+                            .catch(error => console.error('Error getting address:', error));
+                    });
                 }
             },
             (error) => {
@@ -140,6 +217,22 @@ const searchLocation = async (query: string) => {
     }
 };
 
+const validatePhoneInput = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    // Remove any non-digit characters
+    const numericValue = target.value.replace(/\D/g, '');
+    // Limit to 13 digits maximum
+    const limitedValue = numericValue.substring(0, 13);
+    target.value = limitedValue;
+    
+    // Update the form value based on the input's name or id
+    if (target.id === 'no_telepon') {
+        form.no_telepon = limitedValue;
+    } else if (target.id === 'whatsapp') {
+        form.whatsapp = limitedValue;
+    }
+};
+
 const onSearchInput = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const query = target.value;
@@ -167,6 +260,9 @@ const selectLocation = async (result: any) => {
     // Update search query with selected location
     searchQuery.value = result.display_name;
     
+    // Update alamat field with the selected location
+    form.alamat = result.display_name;
+    
     // Hide search results
     showSearchResults.value = false;
     
@@ -175,29 +271,65 @@ const selectLocation = async (result: any) => {
         map.setView([lat, lng], 15);
         
         // Remove existing marker
-        if (currentLocationMarker) {
-            map.removeLayer(currentLocationMarker);
+        if (currentLocationMarker.value) {
+            map.removeLayer(currentLocationMarker.value);
         }
         
         // Add new marker
         const L = window.L;
-        currentLocationMarker = L.marker([lat, lng])
+        currentLocationMarker.value = L.marker([lat, lng], { draggable: true })
             .addTo(map)
             .bindPopup(result.display_name)
             .openPopup();
+        
+        // Add drag event listener
+        currentLocationMarker.value.on('dragend', function(e: any) {
+            const position = e.target.getLatLng();
+            form.latitude = position.lat.toString();
+            form.longitude = position.lng.toString();
+            
+            // Update address when marker is dragged
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}&addressdetails=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.display_name) {
+                        searchQuery.value = data.display_name;
+                        form.alamat = data.display_name;
+                    }
+                })
+                .catch(error => console.error('Error getting address:', error));
+        });
     }
 };
 
 const setMarkerOnMap = (lat: number, lng: number, popupText: string) => {
-    if (currentLocationMarker) {
-        map.removeLayer(currentLocationMarker);
+    if (currentLocationMarker.value) {
+        map.removeLayer(currentLocationMarker.value);
     }
     
     const L = window.L;
-    currentLocationMarker = L.marker([lat, lng])
+    currentLocationMarker.value = L.marker([lat, lng], { draggable: true })
         .addTo(map)
         .bindPopup(popupText)
         .openPopup();
+    
+    // Add drag event listener
+    currentLocationMarker.value.on('dragend', function(e: any) {
+        const position = e.target.getLatLng();
+        form.latitude = position.lat.toString();
+        form.longitude = position.lng.toString();
+        
+        // Update address when marker is dragged
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}&addressdetails=1`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.display_name) {
+                    searchQuery.value = data.display_name;
+                    form.alamat = data.display_name;
+                }
+            })
+            .catch(error => console.error('Error getting address:', error));
+    });
 };
 
 onMounted(async () => {
@@ -249,10 +381,28 @@ onMounted(async () => {
                 searchQuery.value = props.umkm.alamat || '';
             }
 
-            currentLocationMarker = L.default.marker([props.umkm.latitude, props.umkm.longitude])
+            currentLocationMarker.value = L.default.marker([props.umkm.latitude, props.umkm.longitude], { draggable: true })
                 .addTo(map)
                 .bindPopup(props.umkm.nama_umkm)
                 .openPopup();
+            
+            // Add drag event listener for existing marker
+            currentLocationMarker.value.on('dragend', function(e: any) {
+                const position = e.target.getLatLng();
+                form.latitude = position.lat.toString();
+                form.longitude = position.lng.toString();
+                
+                // Update address when marker is dragged
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}&addressdetails=1`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.display_name) {
+                            searchQuery.value = data.display_name;
+                            form.alamat = data.display_name;
+                        }
+                    })
+                    .catch(error => console.error('Error getting address:', error));
+            });
         } else {
             // Set search query to alamat if no coordinates
             searchQuery.value = props.umkm.alamat || '';
@@ -340,7 +490,7 @@ onMounted(async () => {
                                             v-model="form.kategori"
                                             required
                                         >
-                                            <option value="">Pilih Kategori</option>
+                                            <!-- <option value="">Pilih Kategori</option> -->
                                             <option value="Makanan & Minuman">Makanan & Minuman</option>
                                             <option value="Fashion & Tekstil">Fashion & Tekstil</option>
                                             <option value="Kerajinan Tangan">Kerajinan Tangan</option>
@@ -385,8 +535,10 @@ onMounted(async () => {
                                         <TextInput
                                             id="no_telepon"
                                             type="tel"
+                                            maxlength="13"
                                             class="mt-1 block w-full"
                                             v-model="form.no_telepon"
+                                            @input="validatePhoneInput"
                                             placeholder="08xxxxxxxxxx"
                                         />
                                         <InputError class="mt-2" :message="form.errors.no_telepon" />
@@ -413,7 +565,46 @@ onMounted(async () => {
                                             accept="image/*"
                                             @change="handleImageChange"
                                         />
-                                        <p class="mt-1 text-sm text-gray-500">PNG, JPG, GIF hingga 2MB. Kosongkan jika tidak ingin mengubah gambar.</p>
+                                        <div class="mt-2 space-y-2">
+                                            <p class="text-sm text-gray-500">PNG, JPG, GIF hingga 2MB. Kosongkan jika tidak ingin mengubah gambar.</p>
+                                            <p class="text-xs text-indigo-600">
+                                                ✂️ Setelah pilih gambar, otomatis akan muncul fitur kompres
+                                            </p>
+                                            <p class="text-xs text-indigo-600">
+                                                📏 Bisa resize dan kompres gambar otomatis
+                                            </p>
+                                        </div>
+                                        
+                                        <!-- Preview current image -->
+                                        <div v-if="umkm.gambar && !form.gambar" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                </svg>
+                                                <span class="text-sm font-medium text-blue-800">Gambar saat ini:</span>
+                                            </div>
+                                            <img :src="`/storage/${umkm.gambar}`" alt="Current UMKM Image" class="mt-2 w-32 h-24 object-cover rounded-lg">
+                                        </div>
+                                        
+                                        <!-- Preview selected image -->
+                                        <div v-if="form.gambar" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <span class="text-sm font-medium text-green-800">Gambar baru dipilih:</span>
+                                            </div>
+                                            <p class="text-sm text-green-700 mt-1">{{ form.gambar.name }}</p>
+                                            <p class="text-xs text-green-600 mt-1">Size: {{ (form.gambar.size / (1024 * 1024)).toFixed(2) }} MB</p>
+                                            <button
+                                                type="button"
+                                                @click="showImageCropper = true"
+                                                class="mt-2 inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                            >
+                                                📏 Kompres Gambar
+                                            </button>
+                                        </div>
+                                        
                                         <InputError class="mt-2" :message="form.errors.gambar" />
                                     </div>
 
@@ -431,9 +622,11 @@ onMounted(async () => {
                                                     </div>
                                                     <TextInput
                                                         id="whatsapp"
-                                                        type="text"
+                                                        type="tel"
+                                                        maxlength="13"
                                                         class="pl-10 block w-full"
                                                         v-model="form.whatsapp"
+                                                        @input="validatePhoneInput"
                                                         placeholder="628123456789"
                                                     />
                                                 </div>
@@ -503,6 +696,16 @@ onMounted(async () => {
                                         </div>
                                     </div>
 
+                                    <!-- Operating Hours Section -->
+                                    <div class="border-t border-gray-200 pt-6">
+                                        <h3 class="text-lg font-medium text-gray-900 mb-4">🕒 Jam Operasional</h3>
+                                        <OperatingHours 
+                                            :modelValue="form.operating_hours"
+                                            @update:modelValue="handleOperatingHoursChange"
+                                        />
+                                        <InputError class="mt-2" :message="form.errors.operating_hours" />
+                                    </div>
+
                                     <div>
                                         <InputLabel value="Cari Lokasi UMKM" />
                                         <div class="mt-2 relative">
@@ -514,6 +717,7 @@ onMounted(async () => {
                                                     v-model="searchQuery"
                                                     @input="onSearchInput"
                                                     @focus="showSearchResults = searchResults.length > 0"
+                                                    @keydown.enter.prevent
                                                     placeholder="Cari alamat, jalan, atau tempat (contoh: Jl. Pandanaran Semarang)"
                                                 />
                                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -612,6 +816,24 @@ onMounted(async () => {
                 </div>
             </div>
         </div>
+
+        <!-- Image Compressor Modal -->
+        <SimpleImageCompressor
+            :show="showImageCropper"
+            :imageFile="form.gambar"
+            @cropped="handleCroppedImage"
+            @close="handleCropperCancel"
+            @success="handleCropperSuccess"
+            @error="handleCropperError"
+        />
+
+        <!-- Notification -->
+        <Notification
+            :show="showNotification"
+            :type="notificationType"
+            :message="notificationMessage"
+            @close="closeNotification"
+        />
     </AuthenticatedLayout>
 </template>
 

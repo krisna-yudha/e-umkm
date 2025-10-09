@@ -67,17 +67,26 @@ const formatDate = (date: string) => {
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                     Detail UMKM: {{ umkm.nama_umkm }}
                 </h2>
-                <div class="flex space-x-4">
+                <div class="flex space-x-3">
+                    <!-- Edit Button -->
                     <Link
                         :href="route('umkm.edit', umkm.id)"
                         class="inline-flex items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150"
                     >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
                         Edit
                     </Link>
+
+                    <!-- Back Button -->
                     <Link
                         :href="route('umkm.index')"
                         class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150"
                     >
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
                         Kembali
                     </Link>
                 </div>
@@ -278,27 +287,7 @@ const formatDate = (date: string) => {
                         <div v-if="umkm.menus.length === 0" class="text-center py-8">
                             <div class="text-4xl mb-4">🍽️</div>
                             <h4 class="text-lg font-medium text-gray-900 mb-2">Belum Ada Menu</h4>
-                            <p class="text-gray-500 mb-6">Tambahkan menu atau produk pertama untuk UMKM Anda</p>
-                            <div class="flex justify-center space-x-3">
-                                <Link 
-                                    :href="route('umkm.menu.index', umkm.id)"
-                                    class="inline-flex items-center px-6 py-3 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-200 font-medium"
-                                >
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-                                    </svg>
-                                    Kelola Menu
-                                </Link>
-                                <Link 
-                                    :href="route('umkm.menu.create', umkm.id)"
-                                    class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 font-medium"
-                                >
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                    </svg>
-                                    Tambah Menu Pertama
-                                </Link>
-                            </div>
+                            <p class="text-gray-500">Menu akan ditampilkan di sini setelah ditambahkan</p>
                         </div>
 
                         <div v-else>

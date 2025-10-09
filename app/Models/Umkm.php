@@ -24,7 +24,8 @@ class Umkm extends Model
         'instagram',
         'twitter',
         'whatsapp',
-        'website'
+        'website',
+        'operating_hours'
     ];
 
     // Fields that should never be mass assignable for security
@@ -37,6 +38,7 @@ class Umkm extends Model
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'operating_hours' => 'array',
     ];
 
     public function user(): BelongsTo

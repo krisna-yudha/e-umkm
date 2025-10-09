@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/umkm/{umkm}/edit', [UmkmController::class, 'edit'])->name('umkm.edit');
     Route::put('/umkm/{umkm}', [UmkmController::class, 'update'])->name('umkm.update');
     Route::patch('/umkm/{umkm}', [UmkmController::class, 'update']);
+    Route::patch('/umkm/{umkm}/toggle-status', [UmkmController::class, 'toggleStatus'])->name('umkm.toggleStatus');
     Route::delete('/umkm/{umkm}', [UmkmController::class, 'destroy'])->name('umkm.destroy');
     
     // UMKM Menu routes

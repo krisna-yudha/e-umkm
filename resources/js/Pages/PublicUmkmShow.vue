@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 interface User {
     id: number;
@@ -38,6 +38,7 @@ interface Umkm {
     twitter?: string;
     whatsapp?: string;
     website?: string;
+    operating_hours?: any;
     user: {
         name: string;
         email: string;
@@ -81,6 +82,102 @@ const formatDate = (date: string) => {
         month: 'long',
         day: 'numeric'
     });
+};
+
+const formatOperatingHours = (operatingHours: any) => {
+    if (!operatingHours) {
+        return ['Senin - Sabtu: 08:00 - 17:00', 'Minggu: Tutup'];
+    }
+
+    const days = {
+        monday: 'Senin',
+        tuesday: 'Selasa', 
+        wednesday: 'Rabu',
+        thursday: 'Kamis',
+        friday: 'Jumat',
+        saturday: 'Sabtu',
+        sunday: 'Minggu'
+    };
+
+    const scheduleLines: string[] = [];
+    const groupedHours: { [key: string]: string[] } = {};
+    
+    // Group days by their operating hours
+    Object.entries(operatingHours).forEach(([day, hours]: [string, any]) => {
+        const dayName = days[day as keyof typeof days];
+        
+        // Handle both format: isOpen/is_open, openTime/open_time, etc.
+        const isOpen = hours.isOpen !== undefined ? hours.isOpen : hours.is_open;
+        const is24Hours = hours.is24Hours !== undefined ? hours.is24Hours : hours.is_24_hours;
+        const openTime = hours.openTime !== undefined ? hours.openTime : hours.open_time;
+        const closeTime = hours.closeTime !== undefined ? hours.closeTime : hours.close_time;
+        
+        if (!isOpen) {
+            scheduleLines.push(`${dayName}: Tutup`);
+        } else {
+            const timeRange = is24Hours ? '24 Jam' : `${openTime} - ${closeTime}`;
+            
+            if (!groupedHours[timeRange]) {
+                groupedHours[timeRange] = [];
+            }
+            groupedHours[timeRange].push(dayName);
+        }
+    });
+
+    // Format grouped hours
+    Object.entries(groupedHours).forEach(([timeRange, dayList]) => {
+        if (dayList.length === 1) {
+            scheduleLines.push(`${dayList[0]}: ${timeRange}`);
+        } else {
+            // Sort days in week order
+            const dayOrder = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+            const sortedDays = dayList.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+            
+            // Check for consecutive days
+            const consecutiveGroups: string[][] = [];
+            let currentGroup = [sortedDays[0]];
+            
+            for (let i = 1; i < sortedDays.length; i++) {
+                const currentIndex = dayOrder.indexOf(sortedDays[i]);
+                const prevIndex = dayOrder.indexOf(sortedDays[i-1]);
+                
+                if (currentIndex === prevIndex + 1) {
+                    currentGroup.push(sortedDays[i]);
+                } else {
+                    consecutiveGroups.push(currentGroup);
+                    currentGroup = [sortedDays[i]];
+                }
+            }
+            consecutiveGroups.push(currentGroup);
+            
+            // Format consecutive groups
+            consecutiveGroups.forEach(group => {
+                if (group.length === 1) {
+                    scheduleLines.push(`${group[0]}: ${timeRange}`);
+                } else if (group.length >= 2) {
+                    scheduleLines.push(`${group[0]} - ${group[group.length - 1]}: ${timeRange}`);
+                }
+            });
+        }
+    });
+
+    return scheduleLines;
+};
+
+// Modal state for product details
+const showDetailModal = ref(false);
+const selectedMenuDetail = ref<UmkmMenu | null>(null);
+
+// Function to show menu detail modal
+const showMenuDetail = (menu: UmkmMenu) => {
+    selectedMenuDetail.value = menu;
+    showDetailModal.value = true;
+};
+
+// Function to close detail modal
+const closeDetailModal = () => {
+    showDetailModal.value = false;
+    selectedMenuDetail.value = null;
 };
 </script>
 
@@ -203,8 +300,13 @@ const formatDate = (date: string) => {
                                             <span class="w-4 h-4 text-gray-400 mt-1 mr-3">🕒</span>
                                             <div class="min-w-0 flex-1">
                                                 <p class="text-sm text-gray-500">Jam Operasional</p>
-                                                <p class="font-medium text-gray-900">Senin - Sabtu: 08:00 - 17:00</p>
-                                                <p class="text-sm text-gray-500 mt-1">Minggu: Tutup</p>
+                                                <div v-if="formatOperatingHours(umkm.operating_hours).length > 0" class="space-y-1">
+                                                    <p v-for="schedule in formatOperatingHours(umkm.operating_hours)" :key="schedule" class="font-medium text-gray-900">{{ schedule }}</p>
+                                                </div>
+                                                <div v-else>
+                                                    <p class="font-medium text-gray-900">Senin - Sabtu: 08:00 - 17:00</p>
+                                                    <p class="text-sm text-gray-500 mt-1">Minggu: Tutup</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -314,7 +416,12 @@ const formatDate = (date: string) => {
                         </div>
 
                         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                            <div v-for="menu in umkm.menus" :key="menu.id" class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                            <div 
+                                v-for="menu in umkm.menus" 
+                                :key="menu.id" 
+                                @click="showMenuDetail(menu)"
+                                class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-105 transform"
+                            >
                                 <!-- Menu Image -->
                                 <div class="aspect-w-16 aspect-h-12 bg-gray-200">
                                     <img 
@@ -386,6 +493,92 @@ const formatDate = (date: string) => {
                                     </a>
                                 </div> -->
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Detail Modal -->
+        <div v-if="showDetailModal && selectedMenuDetail" class="fixed inset-0 z-50 overflow-y-auto" @click="closeDetailModal">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <!-- Backdrop -->
+                <div class="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75 backdrop-blur-sm" aria-hidden="true"></div>
+
+                <!-- Modal Panel -->
+                <div @click.stop class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <!-- Modal Header with Image -->
+                    <div class="relative">
+                        <div class="h-64 sm:h-80 bg-gradient-to-br from-purple-100 to-blue-100">
+                            <img 
+                                v-if="selectedMenuDetail.gambar_menu" 
+                                :src="`/storage/${selectedMenuDetail.gambar_menu}`" 
+                                :alt="selectedMenuDetail.nama_menu"
+                                class="w-full h-full object-cover"
+                            >
+                            <div v-else class="w-full h-full flex items-center justify-center">
+                                <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <!-- Close Button -->
+                        <button 
+                            @click="closeDetailModal"
+                            class="absolute top-4 right-4 bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-600 hover:text-gray-800 rounded-full p-2 transition-all duration-200 shadow-lg"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+
+                        <!-- Status Badge -->
+                        <div class="absolute top-4 left-4">
+                            <span :class="selectedMenuDetail.tersedia ? 'bg-green-500 text-white' : 'bg-red-500 text-white'" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium shadow-lg">
+                                {{ selectedMenuDetail.tersedia ? '✅ Tersedia' : '❌ Habis' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Modal Content -->
+                    <div class="bg-white px-6 py-6">
+                        <!-- Product Title & Category -->
+                        <div class="mb-4">
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="text-xl font-bold text-gray-900 leading-tight">{{ selectedMenuDetail.nama_menu }}</h3>
+                            </div>
+                            <div v-if="selectedMenuDetail.kategori_menu" class="mb-3">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                                    {{ selectedMenuDetail.kategori_menu }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="mb-4">
+                            <div class="text-2xl font-bold text-purple-600">{{ formatCurrency(selectedMenuDetail.harga) }}</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div v-if="selectedMenuDetail.deskripsi" class="mb-6">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Deskripsi Produk</h4>
+                            <p class="text-gray-600 leading-relaxed">{{ selectedMenuDetail.deskripsi }}</p>
+                        </div>
+
+                        <!-- Contact Actions -->
+                        <div v-if="umkm.whatsapp" class="flex flex-col space-y-3">
+                            <div class="text-center mb-2">
+                                <p class="text-sm text-gray-500">Hubungi untuk pemesanan</p>
+                            </div>
+                            <a :href="`https://wa.me/${umkm.whatsapp}?text=Halo, saya tertarik dengan produk ${selectedMenuDetail.nama_menu} dari ${umkm.nama_umkm}`" 
+                               target="_blank"
+                               class="w-full inline-flex items-center justify-center px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 font-medium text-sm shadow-md">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.570-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+                                </svg>
+                                WhatsApp
+                            </a>
                         </div>
                     </div>
                 </div>

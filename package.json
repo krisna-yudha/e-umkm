@@ -26,9 +26,12 @@
     },
     "dependencies": {
         "@vue-leaflet/vue-leaflet": "^0.10.1",
+        "browser-image-compression": "^2.0.2",
         "chart.js": "^4.5.0",
+        "cropperjs": "^2.0.1",
         "leaflet": "^1.9.4",
         "vue-chartjs": "^5.3.2",
+        "vue-cropperjs": "^5.0.0",
         "vue-leaflet": "^0.1.0"
     }
 }

@@ -105,7 +105,7 @@ const selectLocation = async (result: any) => {
     
     // Move map to selected location with zoom
     if (map) {
-        map.setView([lat, lng], 17);
+        map.setView([lat, lng], 15); // Moderate zoom for better text readability
     }
 };
 
@@ -117,8 +117,8 @@ const getCurrentLocation = () => {
                 const lng = position.coords.longitude;
                 
                 if (map) {
-                    // Zoom level yang lebih friendly - tidak terlalu dekat
-                    map.setView([lat, lng], 16);
+                    // Zoom level yang lebih friendly - tidak terlalu dekat untuk readability
+                    map.setView([lat, lng], 14);
                     
                     // Remove existing user location marker
                     if (userLocationMarker) {
@@ -291,11 +291,11 @@ onMounted(async () => {
         
         L.Marker.prototype.options.icon = DefaultIcon;
 
-        // Initialize map with comprehensive options for dragging
+        // Initialize map with comprehensive options for dragging and better readability
         // Set default view to Semarang, Central Java, Indonesia
         map = L.map(mapContainer.value!, {
             center: [-6.9664, 110.4204], // Semarang coordinates
-            zoom: 15, // Closer zoom level for better detail
+            zoom: 13, // Reduced default zoom for better text readability
             zoomControl: true,
             dragging: true,
             touchZoom: true,
@@ -311,18 +311,23 @@ onMounted(async () => {
             inertiaMaxSpeed: 1500,
             worldCopyJump: false,
             maxBounds: undefined,
-            minZoom: 2,
-            maxZoom: 25
+            minZoom: 8, // Increased minimum zoom to prevent too much zoom out
+            maxZoom: 18, // Reduced maximum zoom to maintain text readability
+            zoomSnap: 0.5, // Allow half-zoom steps for better control
+            zoomDelta: 1, // Standard zoom increment
+            wheelPxPerZoomLevel: 60 // Smoother zoom wheel experience
         });
 
-        // Add tile layer
+        // Add tile layer with better readability settings
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 25,
+            maxZoom: 18, // Reduced from 25 to prevent text from becoming too small
             minZoom: 3,
             tileSize: 256,
             zoomOffset: 0,
-            detectRetina: true
+            detectRetina: false, // Disabled retina to maintain consistent text size
+            opacity: 1.0,
+            className: 'map-tiles-readable' // Custom class for better text rendering
         }).addTo(map);
 
         // Multiple attempts to ensure proper initialization
@@ -483,12 +488,8 @@ onMounted(async () => {
                     className: 'custom-popup-enhanced'
                 });
                 
-                // Add tooltip with UMKM name
-                marker.bindTooltip(umkm.nama_umkm, {
-                    permanent: false,
-                    direction: 'top',
-                    className: 'custom-tooltip'
-                });
+                // Remove duplicate tooltip since we already have hover label on marker
+                // marker.bindTooltip() - commented out to prevent duplicate names
             }
         });
 
@@ -509,30 +510,30 @@ onMounted(async () => {
                         const group = new L.FeatureGroup(
                             semarangUmkms.map(umkm => L.marker([umkm.latitude, umkm.longitude]))
                         );
-                        map.fitBounds(group.getBounds().pad(0.15));
+                        map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 16 });
                     } else {
-                        // Single UMKM in Semarang - zoom level yang friendly
+                        // Single UMKM in Semarang - zoom level yang friendly untuk teks
                         const umkm = semarangUmkms[0];
-                        map.setView([umkm.latitude, umkm.longitude], 15);
+                        map.setView([umkm.latitude, umkm.longitude], 14);
                     }
                 } else if (validUmkms.length > 1) {
                     // UMKM outside Semarang, show all
                     const group = new L.FeatureGroup(
                         validUmkms.map(umkm => L.marker([umkm.latitude, umkm.longitude]))
                     );
-                    map.fitBounds(group.getBounds().pad(0.1));
+                    map.fitBounds(group.getBounds().pad(0.1), { maxZoom: 15 });
                 } else {
-                    // Single UMKM outside Semarang - zoom level yang friendly
+                    // Single UMKM outside Semarang - zoom level yang friendly untuk teks
                     const umkm = validUmkms[0];
-                    map.setView([umkm.latitude, umkm.longitude], 15);
+                    map.setView([umkm.latitude, umkm.longitude], 14);
                 }
             } else {
                 // No valid UMKM coordinates, stay focused on Semarang
-                map.setView([-6.9664, 110.4204], 15);
+                map.setView([-6.9664, 110.4204], 13);
             }
         } else {
             // No UMKM data, stay focused on Semarang
-            map.setView([-6.9664, 110.4204], 15);
+            map.setView([-6.9664, 110.4204], 13);
         }
         
         // Add event listeners to debug dragging
@@ -1057,13 +1058,72 @@ onMounted(async () => {
     border-top-color: rgba(59, 130, 246, 0.95) !important;
 }
 
-/* Fix for map tiles loading */
+/* Fix for map tiles loading and text readability */
 .leaflet-tile-pane {
     pointer-events: none !important;
 }
 
 .leaflet-tile {
     pointer-events: none !important;
+}
+
+/* Improve text readability on map tiles */
+.map-tiles-readable {
+    filter: contrast(1.1) brightness(1.02) !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
+}
+
+/* Enhanced text rendering for better readability */
+.leaflet-container {
+    cursor: grab !important;
+    touch-action: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 1 !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
+}
+
+/* Optimize tile rendering for better text visibility */
+.leaflet-tile-container {
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
+}
+
+/* Better zoom control styling */
+.leaflet-control-zoom {
+    border: none !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-control-zoom a {
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 30px !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+    background: white !important;
+    color: #374151 !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+}
+
+.leaflet-control-zoom a:hover {
+    background: #f3f4f6 !important;
+    color: #1f2937 !important;
+}
+
+.leaflet-control-zoom-in {
+    border-bottom: 1px solid #e5e7eb !important;
 }
 
 /* Semarang marker styling */

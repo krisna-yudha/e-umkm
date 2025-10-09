@@ -32,12 +32,32 @@ const deletingMenus = ref<Set<number>>(new Set());
 const showDeleteModal = ref(false);
 const selectedMenu = ref<{ id: number; name: string } | null>(null);
 
+// Modal state for product detail
+const showDetailModal = ref(false);
+const selectedMenuDetail = ref<UmkmMenu | null>(null);
+
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0
     }).format(amount);
+};
+
+const showMenuDetail = (menu: UmkmMenu, event: Event) => {
+    // Prevent if clicking on toggle or delete button
+    const target = event.target as HTMLElement;
+    if (target.closest('label') || target.closest('input') || target.closest('button')) {
+        return;
+    }
+    
+    selectedMenuDetail.value = menu;
+    showDetailModal.value = true;
+};
+
+const closeDetailModal = () => {
+    showDetailModal.value = false;
+    selectedMenuDetail.value = null;
 };
 
 const deleteMenu = (menuId: number, menuName: string) => {
@@ -98,15 +118,38 @@ const toggleMenuStatus = (menuId: number, isAvailable: boolean) => {
     });
 };
 
-const handleMenuClick = (menuId: number, event: Event) => {
-    // Prevent click when interacting with toggle switch
-    const target = event.target as HTMLElement;
-    if (target.closest('label') || target.closest('input')) {
-        return;
-    }
+const handleToggleChange = async (menuId: number, isChecked: boolean) => {
+    const menu = props.menus.find(m => m.id === menuId);
+    if (!menu) return;
     
-    // Navigate to menu edit page
-    router.visit(route('umkm.menu.edit', [props.umkm.id, menuId]));
+    // If the status is the same, don't make API call
+    if (menu.tersedia === isChecked) return;
+    
+    try {
+        loadingMenus.value.add(menuId);
+        
+        await router.patch(route('umkm.menu.update', [props.umkm.id, menuId]), {
+            tersedia: isChecked
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                // Update the menu status in the local state
+                menu.tersedia = isChecked;
+            },
+            onError: () => {
+                // Reset the toggle on error
+                const checkbox = document.querySelector(`input[data-menu-id="${menuId}"]`) as HTMLInputElement;
+                if (checkbox) {
+                    checkbox.checked = menu.tersedia;
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error updating menu status:', error);
+    } finally {
+        loadingMenus.value.delete(menuId);
+    }
 };
 </script>
 
@@ -179,7 +222,7 @@ const handleMenuClick = (menuId: number, event: Event) => {
                     <!-- List Items -->
                     <div class="divide-y divide-gray-100">
                         <div v-for="menu in menus" :key="menu.id" 
-                             @click="handleMenuClick(menu.id, $event)"
+                             @click="showMenuDetail(menu, $event)"
                              class="px-4 py-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer active:bg-gray-100 touch-manipulation">
                             <div class="flex items-center justify-between">
                                 <!-- Menu Info -->
@@ -219,7 +262,8 @@ const handleMenuClick = (menuId: number, event: Event) => {
                                             type="checkbox" 
                                             :checked="menu.tersedia" 
                                             :disabled="loadingMenus.has(menu.id)"
-                                            @change="(event) => toggleMenuStatus(menu.id, (event.target as HTMLInputElement).checked)"
+                                            :data-menu-id="menu.id"
+                                            @change="(event) => handleToggleChange(menu.id, (event.target as HTMLInputElement).checked)"
                                             class="sr-only peer"
                                         >
                                         <div :class="[
@@ -319,6 +363,102 @@ const handleMenuClick = (menuId: number, event: Event) => {
                         >
                             Batal
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Detail Modal -->
+        <div v-if="showDetailModal && selectedMenuDetail" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="product-modal" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <!-- Background overlay -->
+                <div class="fixed inset-0 bg-black bg-opacity-60 transition-opacity backdrop-blur-sm" @click="closeDetailModal"></div>
+
+                <!-- Modal panel -->
+                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <!-- Header with close button -->
+                    <div class="absolute top-4 right-4 z-10">
+                        <button @click="closeDetailModal" class="bg-white/80 backdrop-blur-sm rounded-full p-2 text-gray-400 hover:text-gray-600 hover:bg-white transition-all duration-200 shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Product Image -->
+                    <div class="relative h-64 sm:h-80 bg-gradient-to-br from-purple-100 to-blue-100 overflow-hidden">
+                        <img 
+                            v-if="selectedMenuDetail.gambar_menu" 
+                            :src="`/storage/${selectedMenuDetail.gambar_menu}`" 
+                            :alt="selectedMenuDetail.nama_menu"
+                            class="w-full h-full object-cover"
+                        >
+                        <div v-else class="w-full h-full flex items-center justify-center">
+                            <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        
+                        <!-- Status badge -->
+                        <div class="absolute top-4 left-4">
+                            <span :class="[
+                                'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold',
+                                selectedMenuDetail.tersedia 
+                                    ? 'bg-green-100 text-green-800 border border-green-200' 
+                                    : 'bg-red-100 text-red-800 border border-red-200'
+                            ]">
+                                <div :class="[
+                                    'w-2 h-2 rounded-full mr-2',
+                                    selectedMenuDetail.tersedia ? 'bg-green-400' : 'bg-red-400'
+                                ]"></div>
+                                {{ selectedMenuDetail.tersedia ? 'Tersedia' : 'Habis' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Product Details -->
+                    <div class="p-6">
+                        <!-- Category -->
+                        <div v-if="selectedMenuDetail.kategori_menu" class="mb-3">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                {{ selectedMenuDetail.kategori_menu }}
+                            </span>
+                        </div>
+
+                        <!-- Product Name -->
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ selectedMenuDetail.nama_menu }}</h2>
+                        
+                        <!-- Price -->
+                        <div class="mb-4">
+                            <span class="text-3xl font-bold text-purple-600">{{ formatCurrency(selectedMenuDetail.harga) }}</span>
+                        </div>
+
+                        <!-- Description -->
+                        <div v-if="selectedMenuDetail.deskripsi" class="mb-6">
+                            <h3 class="text-sm font-semibold text-gray-700 mb-2">Deskripsi</h3>
+                            <p class="text-gray-600 leading-relaxed">{{ selectedMenuDetail.deskripsi }}</p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-3 pt-4 border-t border-gray-100">
+                            <Link 
+                                :href="route('umkm.menu.edit', [umkm.id, selectedMenuDetail.id])"
+                                class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-center py-3 px-4 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+                            >
+                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                Edit Produk
+                            </Link>
+                            <button 
+                                @click="deleteMenu(selectedMenuDetail.id, selectedMenuDetail.nama_menu); closeDetailModal()"
+                                class="px-4 py-3 border border-red-300 text-red-600 rounded-xl font-semibold hover:bg-red-50 hover:border-red-400 transition-all duration-200"
+                            >
+                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
