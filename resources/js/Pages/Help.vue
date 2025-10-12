@@ -200,7 +200,7 @@ import { Head } from '@inertiajs/vue3';
                                         <span class="text-2xl">📧</span>
                                     </div>
                                     <h4 class="mt-4 text-lg font-semibold text-gray-900">Email Support</h4>
-                                    <p class="mt-2 text-blue-600 font-medium">support@e-umkm.com</p>
+                                    <p class="mt-2 text-blue-600 font-medium">krisnayudhap117@gmail.com</p>
                                     <p class="mt-1 text-sm text-gray-500">Response dalam 24 jam</p>
                                 </div>
                                 
@@ -209,7 +209,7 @@ import { Head } from '@inertiajs/vue3';
                                         <span class="text-2xl">💬</span>
                                     </div>
                                     <h4 class="mt-4 text-lg font-semibold text-gray-900">WhatsApp</h4>
-                                    <p class="mt-2 text-green-600 font-medium">+62 812-3456-7890</p>
+                                    <p class="mt-2 text-green-600 font-medium">+62 83-842-346-754</p>
                                     <p class="mt-1 text-sm text-gray-500">Chat langsung dengan tim</p>
                                 </div>
                                 

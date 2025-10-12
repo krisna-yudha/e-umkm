@@ -179,42 +179,44 @@ onMounted(() => {
 
         <div class="py-6 sm:py-12">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <!-- Welcome Section -->
-                <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl p-6 sm:p-8 mb-8 text-white">
-                    <div class="max-w-3xl">
-                        <h1 class="text-2xl sm:text-3xl font-bold mb-4">
-                            Selamat Datang, {{ auth.user.name }}! 👋
-                        </h1>
-                        <p class="text-purple-100 text-sm sm:text-base mb-6">
-                            Platform digital terdepan untuk mendukung perkembangan dan digitalisasi Usaha Mikro, Kecil, dan Menengah di Indonesia. 
-                            Kelola UMKM Anda dengan mudah dan jangkau lebih banyak pelanggan.
-                        </p>
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <Link 
-                                :href="route('user.profile')"
-                                class="inline-flex items-center justify-center px-6 py-3 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl font-semibold text-sm text-white hover:bg-opacity-30 transition-all duration-200"
-                            >
-                                <!-- <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                </svg> -->
-                                Mulai Kelola UMKM
-                            </Link>
-                            <Link 
-                                :href="route('public.umkm.list')"
-                                class="inline-flex items-center justify-center px-6 py-3 bg-transparent border border-white border-opacity-30 rounded-xl font-semibold text-sm text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200"
-                            >
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
-                                Jelajahi UMKM Lain
-                            </Link>
+                <!-- Welcome Section with User Profile -->
+                <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl p-6 sm:p-8 mb-4 text-white">
+                    <div class="flex flex-col lg:flex-row items-center justify-between">
+                        <!-- User Profile Section -->
+                        <div class="flex items-center space-x-6 mb-6 lg:mb-0">
+                            <div class="relative">
+                                <div class="w-20 h-20 sm:w-24 sm:h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-3 border-white border-opacity-30">
+                                    <svg class="w-10 h-10 sm:w-12 sm:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </div>
+                                <!-- Online status indicator -->
+                                <div class="absolute bottom-1 right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
+                            </div>
+                            <div>
+                                <h1 class="text-2xl sm:text-3xl font-bold mb-2">{{ auth.user.name }}</h1>
+                                <p class="text-purple-100 text-sm mb-1">{{ auth.user.email }}</p>
+                                <div class="flex items-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500 bg-opacity-30 text-purple-100 border border-purple-300 border-opacity-30">
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Pelaku UMKM
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Stats -->
+                        <div class="flex flex-col space-y-1 text-center lg:text-right">
+                            <p class="text-purple-100 text-sm">Platform UMKM Digital</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Articles/News Section -->
                 <div class="mb-8">
-                    <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl sm:text-2xl font-bold text-gray-800">
                             Informasi & Tips UMKM
                         </h2>

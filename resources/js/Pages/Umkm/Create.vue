@@ -373,7 +373,7 @@ onMounted(async () => {
         <div class="py-8">
             <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border border-gray-100">
-                    <div class="bg-gradient-to-r from-gray-50 to-blue-50 px-8 py-6 border-b border-gray-200">
+                    <!-- <div class="bg-gradient-to-r from-gray-50 to-blue-50 px-8 py-6 border-b border-gray-200">
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-xl font-semibold text-gray-900">Formulir Pendaftaran UMKM</h3>
@@ -386,7 +386,7 @@ onMounted(async () => {
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
                     
                     <div class="p-8">
                         <form @submit.prevent="submit" enctype="multipart/form-data" class="space-y-8">

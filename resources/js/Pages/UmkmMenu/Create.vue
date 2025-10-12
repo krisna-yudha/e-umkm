@@ -118,12 +118,15 @@ const submit = () => {
                                     v-model="form.harga"
                                     type="number" 
                                     min="0"
+                                    max="9999999"
                                     step="1000"
+                                    maxlength="7"
                                     class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200"
                                     placeholder="0"
                                     required
                                 >
                             </div>
+                            <p class="mt-1 text-xs text-gray-500">Maksimal 7 digit (Rp 9.999.999)</p>
                             <div v-if="form.errors.harga" class="mt-1 text-sm text-red-600">
                                 {{ form.errors.harga }}
                             </div>
