@@ -14,11 +14,17 @@
 
 **Platform manajemen UMKM yang komprehensif dengan teknologi modern - Production Ready**
 
-[🚀 Quick Start](#quick-start) • [📚 API Documentation](./API_DOCUMENTATION_V1.md) • [🔧 Installation](#installation) • [📡 Features](#features)
+[🚀 Quick Start](#quick-start) • [📚 API Documentation](./API_DOCUMENTATION_V1.md) • [🔧 Installation](#installation) • [📡 Features](#features) • [🌐 Production](#production)
 
 </div>
 
-</div>
+---
+
+## 🌐 Production Deployment
+
+> ⚠️ **UNTUK DEPLOY KE PRODUCTION**: Baca **[DEPLOYMENT_PRODUCTION.md](./DEPLOYMENT_PRODUCTION.md)**
+> 
+> Mencakup: Map icons fix, Storage symlink, Force HTTPS, Testing checklist
 
 ---
 
@@ -152,6 +158,9 @@
    ```
 
    Akses aplikasi di: `http://127.0.0.1:8000`
+
+> **🚀 Ready for Production?**
+> Lihat [DEPLOYMENT_PRODUCTION.md](./DEPLOYMENT_PRODUCTION.md) untuk production deployment checklist lengkap.
 
 ---
 
