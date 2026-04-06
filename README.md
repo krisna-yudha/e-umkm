@@ -292,25 +292,11 @@ php artisan serve
 
 ---
 
-## 🤝 Contributing
-
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
 ### Development Guidelines
 - Follow PSR-12 coding standards
 - Write descriptive commit messages
 - Add tests for new features
 - Update documentation
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -321,24 +307,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Inertia.js** - Modern monolith architecture
 - **Tailwind CSS** - Utility-first CSS framework
 - **Leaflet** - Open-source mapping library
-
----
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/krisna-yudha/e-umkm/issues)
-- **Documentation**: [API Documentation](./README_API.md)
-- **Email**: support@e-umkm.com
-
----
-
-<div align="center">
-
-**Made with ❤️ for Indonesian UMKM**
-
-⭐ **Star this repo if you find it helpful!** ⭐
-
-</div>
 
 ---
 
