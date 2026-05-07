@@ -29,6 +29,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'user_type' => ['nullable', 'string', 'in:user,umkm'], // Optional user_type from form
         ];
     }
 

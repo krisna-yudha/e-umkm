@@ -24,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'user_type',
         'profile_photo',
     ];
 
@@ -60,6 +61,16 @@ class User extends Authenticatable
         return $this->hasOne(Umkm::class);
     }
 
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
@@ -68,5 +79,10 @@ class User extends Authenticatable
     public function isUmkm(): bool
     {
         return $this->role === 'umkm';
+    }
+
+    public function isUser(): bool
+    {
+        return $this->user_type === 'user';
     }
 }

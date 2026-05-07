@@ -10,8 +10,15 @@ const props = defineProps<{
 
 const form = useForm({});
 
+// Create logout form for proper CSRF handling
+const logoutForm = useForm({});
+
 const submit = () => {
     form.post(route('verification.send'));
+};
+
+const handleLogout = () => {
+    logoutForm.post(route('logout'));
 };
 
 const verificationLinkSent = computed(
@@ -46,13 +53,11 @@ const verificationLinkSent = computed(
                     Resend Verification Email
                 </PrimaryButton>
 
-                <Link
-                    :href="route('logout')"
-                    method="post"
-                    as="button"
+                <button
+                    @click="handleLogout"
+                    type="button"
                     class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >Log Out</Link
-                >
+                >Log Out</button>
             </div>
         </form>
     </GuestLayout>

@@ -30,23 +30,26 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        // Validate user_type from register form
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:umkm,user',
+            'user_type' => 'required|in:user,umkm', // Must be either 'user' or 'umkm'
         ]);
 
+        // Create user with validated user_type from form
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'user', // Default role for all non-admin users
+            'user_type' => $validated['user_type'], // Use user_type from validated data
         ]);
 
         event(new Registered($user));
 
-        // Don't automatically login user, redirect to login with success message
+        // Redirect to unified login page with success message
         return redirect(route('login'))->with('status', 'Akun berhasil dibuat! Silakan masuk dengan akun Anda.');
     }
 }

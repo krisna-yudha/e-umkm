@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import GuestLayout from '@/Layouts/GuestLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref, computed, onMounted } from 'vue';
 
 // Interface for user
 interface User {
@@ -9,6 +9,7 @@ interface User {
     name: string;
     email: string;
     role?: string;
+    user_type?: string;
 }
 
 // Interface for pagination
@@ -31,24 +32,38 @@ interface PaginationData {
     next_page_url: string | null;
 }
 
-// Props with pagination data and auth
+// Props with pagination data
 const props = defineProps<{
     umkms: PaginationData;
-    auth?: {
-        user: User | null;
-    };
 }>();
+
+// Get auth from Inertia shared data
+const page = usePage();
+const currentUser = computed(() => {
+    return page.props.auth?.user as User | null;
+});
+
+const isAuthenticated = computed(() => {
+    return Boolean(page.props.auth?.user);
+});
 
 // Search functionality
 const searchQuery = ref('');
 
-// View toggle functionality
-const isGridView = ref(true);
+// View toggle functionality - Default: Grid for mobile, List for desktop
+const isGridView = ref(false);
+
+// Initialize view based on screen size (only on mount)
+onMounted(() => {
+    // Set default view based on screen size (lg breakpoint is 1024px)
+    // Only set once when page loads, don't auto-change on resize
+    isGridView.value = window.innerWidth < 1024;
+});
 
 // Smart navigation - determine home route based on auth status
 const homeRoute = computed(() => {
     // If user is logged in, go to dashboard
-    if (props.auth?.user) {
+    if (currentUser.value) {
         return route('dashboard');
     }
     // If not logged in, go to public home
@@ -57,8 +72,8 @@ const homeRoute = computed(() => {
 
 // Determine home button text based on auth status
 const homeButtonText = computed(() => {
-    if (props.auth?.user) {
-        return 'Kembali ke Dashboard';
+    if (currentUser.value) {
+        return `Dashboard (${currentUser.value.name})`;
     }
     return 'Kembali ke Beranda';
 });
@@ -109,21 +124,22 @@ const isSearching = computed(() => {
                     <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 20px 20px;"></div>
                 </div>
                 
-                <div class="max-w-7xl mx-auto px-4 py-20 relative">
+                <div class="max-w-7xl mx-auto px-4 py-8 sm:py-20 relative">
                     <div class="text-center">
-                        <h1 class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                        <!-- Hidden on mobile, shown on desktop -->
+                        <h1 class="hidden sm:block text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
                             Daftar UMKM
                         </h1>
-                        <p class="text-xl text-white text-opacity-90 mb-10 max-w-3xl mx-auto leading-relaxed">
+                        <p class="hidden sm:block text-xl text-white text-opacity-90 mb-10 max-w-3xl mx-auto leading-relaxed">
                             Platform digital terdepan untuk mendukung perkembangan dan digitalisasi 
                             <span class="text-yellow-300 font-semibold">Usaha Mikro, Kecil, dan Menengah</span> di Indonesia
                         </p>
                         
                         <!-- Navigation Buttons dengan styling card homepage -->
-                        <div class="flex flex-col sm:flex-row gap-6 justify-center">
+                        <div class="flex flex-col sm:flex-row gap-3 sm:gap-6 justify-center">
                             <Link 
                                 :href="homeRoute" 
-                                class="group relative overflow-hidden bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-2xl p-4 hover:bg-opacity-20 transition-all duration-300 shadow-xl"
+                                class="hidden sm:flex group relative overflow-hidden bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-2xl p-4 hover:bg-opacity-20 transition-all duration-300 shadow-xl"
                             >
                                 <div class="flex items-center justify-center space-x-3">
                                     <div class="w-12 h-12 bg-blue-500 bg-opacity-20 rounded-xl flex items-center justify-center">
@@ -137,7 +153,7 @@ const isSearching = computed(() => {
                             
                             <Link 
                                 href="/mapping" 
-                                class="group relative overflow-hidden bg-green-500 bg-opacity-20 backdrop-blur-md border border-green-400 border-opacity-30 rounded-2xl p-4 hover:bg-opacity-30 transition-all duration-300 shadow-xl"
+                                class="hidden sm:flex group relative overflow-hidden bg-green-500 bg-opacity-20 backdrop-blur-md border border-green-400 border-opacity-30 rounded-2xl p-4 hover:bg-opacity-30 transition-all duration-300 shadow-xl"
                             >
                                 <div class="flex items-center justify-center space-x-3">
                                     <div class="w-12 h-12 bg-green-500 bg-opacity-30 rounded-xl flex items-center justify-center">
@@ -149,37 +165,125 @@ const isSearching = computed(() => {
                                     <span class="text-white font-semibold">Peta UMKM</span>
                                 </div>
                             </Link>
+
+                            <!-- Login Button untuk User Biasa (Jika belum login) -->
+                            <Link 
+                                v-if="!isAuthenticated"
+                                href="/login" 
+                                class="hidden sm:flex group relative overflow-hidden bg-purple-500 bg-opacity-20 backdrop-blur-md border border-purple-400 border-opacity-30 rounded-2xl p-4 hover:bg-opacity-30 transition-all duration-300 shadow-xl"
+                            >
+                                <div class="flex items-center justify-center space-x-3">
+                                    <div class="w-12 h-12 bg-purple-500 bg-opacity-30 rounded-xl flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h12.75m0 0V8m0 4v4"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="text-white font-semibold">Login Guest</span>
+                                </div>
+                            </Link>
+
+                            <!-- Dashboard Button (Jika sudah login) -->
+                            <Link 
+                                v-if="isAuthenticated"
+                                href="/dashboard" 
+                                class="hidden sm:flex group relative overflow-hidden bg-green-500 bg-opacity-20 backdrop-blur-md border border-green-400 border-opacity-30 rounded-2xl p-4 hover:bg-opacity-30 transition-all duration-300 shadow-xl"
+                            >
+                                <div class="flex items-center justify-center space-x-3">
+                                    <div class="w-12 h-12 bg-green-500 bg-opacity-30 rounded-xl flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <span class="text-white font-semibold">Dashboard</span>
+                                </div>
+                            </Link>
+
+                            <!-- Mobile compact buttons -->
+                            <div class="sm:hidden flex gap-3 justify-center w-full">
+                                <Link 
+                                    :href="homeRoute" 
+                                    class="group flex-1 relative overflow-hidden bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-lg p-2 hover:bg-opacity-20 transition-all duration-300"
+                                >
+                                    <div class="flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                        </svg>
+                                        <span class="text-white font-semibold text-xs">Kembali</span>
+                                    </div>
+                                </Link>
+                                
+                                <Link 
+                                    href="/mapping" 
+                                    class="group flex-1 relative overflow-hidden bg-green-500 bg-opacity-20 backdrop-blur-md border border-green-400 border-opacity-30 rounded-lg p-2 hover:bg-opacity-30 transition-all duration-300"
+                                >
+                                    <div class="flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        <span class="text-white font-semibold text-xs">Peta</span>
+                                    </div>
+                                </Link>
+
+                                <!-- Login Button Mobile (Jika belum login) -->
+                                <Link 
+                                    v-if="!isAuthenticated"
+                                    href="/login" 
+                                    class="group flex-1 relative overflow-hidden bg-purple-500 bg-opacity-20 backdrop-blur-md border border-purple-400 border-opacity-30 rounded-lg p-2 hover:bg-opacity-30 transition-all duration-300"
+                                >
+                                    <div class="flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h12.75m0 0V8m0 4v4"></path>
+                                        </svg>
+                                        <span class="text-white font-semibold text-xs">Login</span>
+                                    </div>
+                                </Link>
+
+                                <!-- Dashboard Button Mobile (Jika sudah login) -->
+                                <Link 
+                                    v-if="isAuthenticated"
+                                    href="/dashboard" 
+                                    class="group flex-1 relative overflow-hidden bg-green-500 bg-opacity-20 backdrop-blur-md border border-green-400 border-opacity-30 rounded-lg p-2 hover:bg-opacity-30 transition-all duration-300"
+                                >
+                                    <div class="flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="text-white font-semibold text-xs">Dash</span>
+                                    </div>
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Main Content -->
-            <div class="max-w-7xl mx-auto px-4 pb-12 -mt-8 relative">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 pb-8 sm:pb-12 -mt-6 sm:-mt-8 relative">
                 
                 <!-- Control Panel -->
-                <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl border border-white border-opacity-20 shadow-2xl p-4 sm:p-6 mb-8">
-                    <div class="space-y-4">
+                <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white border-opacity-20 shadow-2xl p-3 sm:p-6 mb-6 sm:mb-8">
+                    <div class="space-y-3 sm:space-y-4">
                         <!-- Search Bar -->
                         <div class="relative w-full">
                             <input
                                 v-model="searchQuery"
                                 type="text"
-                                placeholder="Cari UMKM, kategori, atau lokasi..."
-                                class="w-full pl-12 pr-4 py-3 sm:py-4 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-2xl focus:ring-2 focus:ring-white focus:ring-opacity-50 focus:border-white focus:border-opacity-50 transition-all text-white placeholder-white placeholder-opacity-70 text-sm sm:text-base"
+                                placeholder="Cari UMKM..."
+                                class="w-full pl-10 pr-4 py-2.5 sm:py-4 bg-white bg-opacity-20 backdrop-blur-sm border border-white border-opacity-30 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-white focus:ring-opacity-50 focus:border-white focus:border-opacity-50 transition-all text-white placeholder-white placeholder-opacity-70 text-sm sm:text-base"
                             />
-                            <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-white text-opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white text-opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg>
                         </div>
 
-                        <!-- View Toggle -->
-                        <div class="flex justify-center">
-                            <div class="flex bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-1 border border-white border-opacity-20">
+                        <!-- View Toggle - Hidden on Desktop -->
+                        <div class="flex justify-center lg:hidden">
+                            <div class="flex bg-white bg-opacity-10 backdrop-blur-sm rounded-xl sm:rounded-2xl p-1 border border-white border-opacity-20">
                                 <button
                                     @click="isGridView = true"
                                     :class="[
-                                        'flex items-center justify-center px-4 py-2 sm:py-3 rounded-xl transition-all duration-200',
+                                        'flex items-center justify-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-all duration-200',
                                         isGridView 
                                             ? 'bg-white bg-opacity-20 text-white shadow-lg' 
                                             : 'text-white text-opacity-70 hover:text-opacity-100'
@@ -192,7 +296,7 @@ const isSearching = computed(() => {
                                 <button
                                     @click="isGridView = false"
                                     :class="[
-                                        'flex items-center justify-center px-4 py-2 sm:py-3 rounded-xl transition-all duration-200',
+                                        'flex items-center justify-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-all duration-200',
                                         !isGridView 
                                             ? 'bg-white bg-opacity-20 text-white shadow-lg' 
                                             : 'text-white text-opacity-70 hover:text-opacity-100'
@@ -207,7 +311,7 @@ const isSearching = computed(() => {
                     </div>
 
                     <!-- Search Results Info -->
-                    <div v-if="searchQuery" class="mt-4 text-sm text-white text-opacity-80">
+                    <div v-if="searchQuery" class="mt-3 sm:mt-4 text-xs sm:text-sm text-white text-opacity-80">
                         Menampilkan {{ isSearching ? filteredUmkms.length : umkms.from + '-' + umkms.to }} dari {{ umkms.total }} UMKM
                     </div>
                 </div>
@@ -215,14 +319,14 @@ const isSearching = computed(() => {
                 <!-- Content dengan Grid dan List View -->
                 <div v-if="filteredUmkms && filteredUmkms.length > 0">
                     <!-- Grid View -->
-                    <div v-if="isGridView" class="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    <div v-if="isGridView" class="grid gap-3 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                         <div 
                             v-for="umkm in filteredUmkms" 
                             :key="umkm.id" 
-                            class="group relative overflow-hidden bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white border-opacity-20 shadow-2xl hover:bg-opacity-20 transition-all duration-300"
+                            class="group relative overflow-hidden bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 shadow-2xl hover:bg-opacity-20 transition-all duration-300"
                         >
                             <!-- Card Header -->
-                            <div class="relative h-32 sm:h-40 overflow-hidden">
+                            <div class="relative h-28 sm:h-40 overflow-hidden">
                                 <!-- Background Image or Gradient -->
                                 <div v-if="umkm.gambar" class="absolute inset-0">
                                     <img 
@@ -237,14 +341,14 @@ const isSearching = computed(() => {
                                     <div class="absolute inset-0 bg-black bg-opacity-20"></div>
                                 </div>
                                 
-                                <div class="absolute top-3 left-3 sm:top-4 sm:left-4">
-                                    <span class="bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs font-semibold text-gray-800">
+                                <div class="absolute top-2 left-2 sm:top-4 sm:left-4">
+                                    <span class="bg-white bg-opacity-90 backdrop-blur-sm px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-semibold text-gray-800">
                                         {{ umkm.kategori || 'Kategori' }}
                                     </span>
                                 </div>
-                                <div class="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
-                                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="absolute bottom-2 right-2 sm:bottom-4 sm:right-4">
+                                    <div class="w-9 h-9 sm:w-12 sm:h-12 bg-white bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                        <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                                         </svg>
                                     </div>
@@ -252,14 +356,14 @@ const isSearching = computed(() => {
                             </div>
 
                             <!-- Card Content -->
-                            <div class="p-4 sm:p-6">
-                                <h3 class="font-bold text-lg sm:text-xl text-white mb-2 sm:mb-3 group-hover:text-yellow-300 transition-colors line-clamp-2">
+                            <div class="p-3 sm:p-6">
+                                <h3 class="font-bold text-base sm:text-xl text-white mb-2 sm:mb-3 group-hover:text-yellow-300 transition-colors line-clamp-2">
                                     {{ umkm.nama_umkm || 'Nama UMKM' }}
                                 </h3>
                                 
-                                <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                                <div class="space-y-2 sm:space-y-3 mb-3 sm:mb-6">
                                     <div class="flex items-start gap-2">
-                                        <svg class="w-4 h-4 text-white text-opacity-60 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-3 h-3 sm:w-4 sm:h-4 text-white text-opacity-60 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                         </svg>
@@ -267,7 +371,7 @@ const isSearching = computed(() => {
                                     </div>
 
                                     <div v-if="umkm.deskripsi" class="flex items-start gap-2">
-                                        <svg class="w-4 h-4 text-white text-opacity-60 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-3 h-3 sm:w-4 sm:h-4 text-white text-opacity-60 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
                                         <span class="text-xs sm:text-sm text-white text-opacity-80 line-clamp-3">{{ umkm.deskripsi }}</span>
@@ -277,9 +381,9 @@ const isSearching = computed(() => {
                                 <!-- Action Button -->
                                 <Link 
                                     :href="route('public.umkm.show', umkm.id)"
-                                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2.5 sm:py-3 px-4 rounded-xl sm:rounded-2xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg text-sm sm:text-base"
+                                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg sm:rounded-2xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg text-xs sm:text-base"
                                 >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                     </svg>
@@ -289,111 +393,118 @@ const isSearching = computed(() => {
                         </div>
                     </div>
 
-                    <!-- List View -->
-                    <div v-else class="space-y-4">
+                    <!-- List View - Format seperti Google Maps/Food Delivery Apps -->
+                    <div v-else class="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3">
                         <div 
                             v-for="umkm in filteredUmkms" 
                             :key="umkm.id" 
-                            class="group bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 shadow-xl hover:bg-opacity-20 transition-all duration-300"
+                            class="group relative overflow-hidden bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 shadow-xl hover:shadow-2xl hover:bg-opacity-20 transition-all duration-300 flex flex-col"
                         >
-                            <div class="flex flex-col lg:flex-row">
-                                <!-- Left side - Image -->
-                                <div class="lg:w-48 h-32 lg:h-auto relative overflow-hidden lg:rounded-l-2xl rounded-t-2xl lg:rounded-tr-none">
-                                    <!-- Background Image or Gradient -->
-                                    <div v-if="umkm.gambar" class="absolute inset-0">
-                                        <img 
-                                            :src="`/storage/${umkm.gambar}`" 
-                                            :alt="umkm.nama_umkm"
-                                            class="w-full h-full object-cover"
-                                            @error="handleImageError"
-                                        />
-                                        <div class="absolute inset-0 bg-black bg-opacity-40"></div>
-                                    </div>
-                                    <div v-else class="absolute inset-0 bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
-                                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
-                                        <!-- Default Icon -->
-                                        <div class="absolute inset-0 flex items-center justify-center">
-                                            <svg class="w-12 h-12 text-white text-opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="absolute top-3 left-3">
-                                        <span class="bg-white bg-opacity-90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-semibold text-gray-800">
-                                            {{ umkm.kategori || 'Kategori' }}
-                                        </span>
+                            <!-- Image Section -->
+                            <div class="relative h-32 sm:h-40 overflow-hidden rounded-t-2xl">
+                                <!-- Background Image or Gradient -->
+                                <div v-if="umkm.gambar" class="absolute inset-0">
+                                    <img 
+                                        :src="`/storage/${umkm.gambar}`" 
+                                        :alt="umkm.nama_umkm"
+                                        class="w-full h-full object-cover"
+                                        @error="handleImageError"
+                                    />
+                                    <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+                                </div>
+                                <div v-else class="absolute inset-0 bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
+                                    <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                                    <!-- Default Icon -->
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white text-opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                        </svg>
                                     </div>
                                 </div>
+                                
+                                <!-- Category Badge - Top Left -->
+                                <div class="absolute top-2 left-2">
+                                    <span class="bg-white bg-opacity-95 backdrop-blur-sm px-2 py-0.5 text-xs font-bold text-gray-800 rounded-full">
+                                        {{ umkm.kategori || 'Kategori' }}
+                                    </span>
+                                </div>
 
-                                <!-- Right side - Content -->
-                                <div class="flex-1 p-6">
-                                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between h-full">
-                                        <div class="flex-1 lg:pr-6">
-                                            <h3 class="font-bold text-xl text-white mb-2 group-hover:text-yellow-300 transition-colors">
-                                                {{ umkm.nama_umkm || 'Nama UMKM' }}
-                                            </h3>
-                                            
-                                            <div class="flex flex-wrap gap-4 mb-3">
-                                                <div class="flex items-center gap-2">
-                                                    <svg class="w-4 h-4 text-white text-opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    </svg>
-                                                    <span class="text-sm text-white text-opacity-80">{{ umkm.alamat || 'Alamat tidak tersedia' }}</span>
-                                                </div>
-                                                
-                                                <div v-if="umkm.no_telepon" class="flex items-center gap-2">
-                                                    <svg class="w-4 h-4 text-white text-opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                                    </svg>
-                                                    <span class="text-sm text-white text-opacity-80">{{ umkm.no_telepon }}</span>
-                                                </div>
-                                            </div>
-
-                                            <p v-if="umkm.deskripsi" class="text-sm text-white text-opacity-80 line-clamp-2">
-                                                {{ umkm.deskripsi }}
-                                            </p>
-                                        </div>
-
-                                        <!-- Action Button -->
-                                        <div class="mt-4 lg:mt-0 lg:flex-shrink-0">
-                                            <Link 
-                                                :href="route('public.umkm.show', umkm.id)"
-                                                class="w-full lg:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                </svg>
-                                                Lihat Detail
-                                            </Link>
-                                        </div>
+                                <!-- Building Icon - Top Right -->
+                                <div class="absolute top-2 right-2">
+                                    <div class="w-7 h-7 bg-white bg-opacity-20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white border-opacity-40">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                        </svg>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Content Section -->
+                            <div class="flex-1 p-3 sm:p-4 flex flex-col">
+                                <!-- Title -->
+                                <h3 class="font-bold text-sm sm:text-base text-white mb-2 group-hover:text-yellow-300 transition-colors line-clamp-2">
+                                    {{ umkm.nama_umkm || 'Nama UMKM' }}
+                                </h3>
+
+                                <!-- Info Section -->
+                                <div class="flex-1 space-y-1.5 mb-3">
+                                    <!-- Location -->
+                                    <div class="flex items-start gap-1.5">
+                                        <svg class="w-3 h-3 text-white text-opacity-60 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                        <span class="text-xs text-white text-opacity-80 line-clamp-1">{{ umkm.alamat || 'Alamat tidak tersedia' }}</span>
+                                    </div>
+
+                                    <!-- Phone -->
+                                    <div v-if="umkm.no_telepon" class="flex items-start gap-1.5">
+                                        <svg class="w-3 h-3 text-white text-opacity-60 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                        </svg>
+                                        <span class="text-xs text-white text-opacity-80 line-clamp-1">{{ umkm.no_telepon }}</span>
+                                    </div>
+
+                                    <!-- Description (Optional) -->
+                                    <p v-if="umkm.deskripsi" class="text-xs text-white text-opacity-80 line-clamp-2 pt-0.5">
+                                        {{ umkm.deskripsi }}
+                                    </p>
+                                </div>
+
+                                <!-- Action Button -->
+                                <Link 
+                                    :href="route('public.umkm.show', umkm.id)"
+                                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-3 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg text-xs"
+                                >
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    Lihat Detail
+                                </Link>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Empty State -->
-                <div v-else class="text-center py-16">
-                    <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl border border-white border-opacity-20 shadow-2xl p-12 max-w-md mx-auto">
-                        <div class="bg-white bg-opacity-20 backdrop-blur-sm w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white border-opacity-30">
-                            <svg class="w-12 h-12 text-white text-opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div v-else class="text-center py-10 sm:py-16">
+                    <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white border-opacity-20 shadow-2xl p-6 sm:p-12 max-w-md mx-auto">
+                        <div class="bg-white bg-opacity-20 backdrop-blur-sm w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 border border-white border-opacity-30">
+                            <svg class="w-8 h-8 sm:w-12 sm:h-12 text-white text-opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                             </svg>
                         </div>
-                        <h3 class="text-xl font-semibold text-white mb-2">
+                        <h3 class="text-lg sm:text-xl font-semibold text-white mb-2">
                             {{ searchQuery ? 'Tidak ada hasil pencarian' : 'Belum ada UMKM yang terdaftar' }}
                         </h3>
-                        <p class="text-white text-opacity-80 mb-6">
+                        <p class="text-white text-opacity-80 mb-4 sm:mb-6 text-sm sm:text-base">
                             {{ searchQuery ? `Tidak ditemukan UMKM dengan kata kunci "${searchQuery}"` : 'Saat ini belum ada UMKM yang mendaftar di sistem kami.' }}
                         </p>
                         <button 
                             v-if="searchQuery"
                             @click="searchQuery = ''"
-                            class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-2xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg"
+                            class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-xl sm:rounded-2xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg text-sm sm:text-base"
                         >
                             Hapus Pencarian
                         </button>
@@ -401,31 +512,31 @@ const isSearching = computed(() => {
                 </div>
                 
                 <!-- Pagination Component -->
-                <div v-if="!isSearching && umkms.total > umkms.per_page" class="mt-12">
-                    <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 shadow-xl p-6">
-                        <div class="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+                <div v-if="!isSearching && umkms.total > umkms.per_page" class="mt-8 sm:mt-12">
+                    <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 shadow-xl p-4 sm:p-6">
+                        <div class="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
                             <!-- Pagination Info -->
-                            <div class="text-white text-opacity-80 text-sm">
+                            <div class="text-white text-opacity-80 text-xs sm:text-sm">
                                 Menampilkan {{ umkms.from }}-{{ umkms.to }} dari {{ umkms.total }} UMKM
                             </div>
                             
                             <!-- Pagination Links -->
-                            <div class="flex items-center space-x-2">
+                            <div class="flex items-center space-x-1 sm:space-x-2">
                                 <!-- Previous Button -->
                                 <button
                                     @click="goToPage(umkms.prev_page_url)"
                                     :disabled="!umkms.prev_page_url"
                                     :class="[
-                                        'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                                        'px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200',
                                         umkms.prev_page_url
                                             ? 'bg-white bg-opacity-20 text-white hover:bg-opacity-30 border border-white border-opacity-30'
                                             : 'bg-gray-500 bg-opacity-20 text-gray-400 cursor-not-allowed border border-gray-500 border-opacity-30'
                                     ]"
                                 >
-                                    <svg class="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                                     </svg>
-                                    Sebelumnya
+                                    <span class="hidden sm:inline">Sebelumnya</span>
                                 </button>
                                 
                                 <!-- Page Numbers -->
@@ -451,7 +562,7 @@ const isSearching = computed(() => {
                                 </div>
                                 
                                 <!-- Mobile Page Info -->
-                                <div class="sm:hidden bg-white bg-opacity-20 text-white px-3 py-2 rounded-lg text-sm border border-white border-opacity-30">
+                                <div class="sm:hidden bg-white bg-opacity-20 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs border border-white border-opacity-30">
                                     {{ umkms.current_page }} / {{ umkms.last_page }}
                                 </div>
                                 
@@ -460,14 +571,14 @@ const isSearching = computed(() => {
                                     @click="goToPage(umkms.next_page_url)"
                                     :disabled="!umkms.next_page_url"
                                     :class="[
-                                        'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+                                        'px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200',
                                         umkms.next_page_url
                                             ? 'bg-white bg-opacity-20 text-white hover:bg-opacity-30 border border-white border-opacity-30'
                                             : 'bg-gray-500 bg-opacity-20 text-gray-400 cursor-not-allowed border border-gray-500 border-opacity-30'
                                     ]"
                                 >
-                                    Selanjutnya
-                                    <svg class="w-4 h-4 ml-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <span class="hidden sm:inline">Selanjutnya</span>
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                     </svg>
                                 </button>

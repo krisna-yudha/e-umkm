@@ -5,25 +5,32 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+
+const userType = ref<'user' | 'umkm'>('user');
+const showPassword = ref(false);
+const showPasswordConfirmation = ref(false);
 
 const form = useForm({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
-    role: 'umkm',
+    user_type: 'user',
+    agree_terms: false,
 });
 
-const showPassword = ref(false);
-const showPasswordConfirmation = ref(false);
+// Change user type and update form
+const changeUserType = (type: 'user' | 'umkm') => {
+    userType.value = type;
+    form.user_type = type;
+};
+
+const isUmkm = computed(() => userType.value === 'umkm');
+const isUser = computed(() => userType.value === 'user');
 
 const submit = () => {
     form.post(route('register'), {
-        onSuccess: () => {
-            // Redirect to login with success message instead of dashboard
-            window.location.href = route('login') + '?message=Akun berhasil dibuat! Silakan masuk dengan akun Anda.';
-        },
         onFinish: () => {
             form.reset('password', 'password_confirmation');
         },
@@ -57,14 +64,46 @@ const togglePasswordConfirmation = () => {
                 <Link href="/" class="inline-block">
                     <h1 class="text-3xl font-extrabold text-white mb-2">Sistem UMKM</h1>
                 </Link>
-                <p class="text-gray-300">Bergabung dengan komunitas UMKM</p>
+                <p class="text-gray-300">{{ isUmkm ? 'Daftar akun UMKM Anda' : 'Daftar sebagai pengguna biasa' }}</p>
             </div>
 
             <!-- Register Card -->
             <div class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 shadow-2xl">
+                <!-- User Type Tabs -->
+                <div class="flex gap-2 mb-6 bg-white/5 p-1 rounded-lg border border-white/10">
+                    <button
+                        type="button"
+                        @click="changeUserType('user')"
+                        :class="[
+                            'flex-1 py-2 px-3 rounded-md font-semibold text-sm transition-all duration-200',
+                            isUser 
+                                ? 'bg-purple-600 text-white shadow-lg' 
+                                : 'text-gray-300 hover:text-white'
+                        ]"
+                    >
+                        👤 Pengguna
+                    </button>
+                    <button
+                        type="button"
+                        @click="changeUserType('umkm')"
+                        :class="[
+                            'flex-1 py-2 px-3 rounded-md font-semibold text-sm transition-all duration-200',
+                            isUmkm 
+                                ? 'bg-blue-600 text-white shadow-lg' 
+                                : 'text-gray-300 hover:text-white'
+                        ]"
+                    >
+                        🏪 UMKM
+                    </button>
+                </div>
+
                 <form @submit.prevent="submit" class="space-y-6">
                     <div>
-                        <InputLabel for="name" value="Nama Lengkap" class="text-white font-semibold" />
+                        <InputLabel 
+                            for="name" 
+                            :value="isUmkm ? 'Nama Pemilik / Nama UMKM' : 'Nama Lengkap'" 
+                            class="text-white font-semibold" 
+                        />
                         <TextInput
                             id="name"
                             type="text"
@@ -73,13 +112,17 @@ const togglePasswordConfirmation = () => {
                             required
                             autofocus
                             autocomplete="name"
-                            placeholder="Masukkan nama lengkap Anda"
+                            :placeholder="isUmkm ? 'Masukkan nama pemilik atau nama bisnis' : 'Masukkan nama lengkap Anda'"
                         />
                         <InputError class="mt-2" :message="form.errors.name" />
                     </div>
 
                     <div>
-                        <InputLabel for="email" value="Email" class="text-white font-semibold" />
+                        <InputLabel 
+                            for="email" 
+                            :value="isUmkm ? 'Email Bisnis' : 'Email'" 
+                            class="text-white font-semibold" 
+                        />
                         <TextInput
                             id="email"
                             type="email"
@@ -87,7 +130,7 @@ const togglePasswordConfirmation = () => {
                             v-model="form.email"
                             required
                             autocomplete="username"
-                            placeholder="Masukkan email Anda"
+                            :placeholder="isUmkm ? 'Masukkan email bisnis Anda' : 'Masukkan email Anda'"
                         />
                         <InputError class="mt-2" :message="form.errors.email" />
                     </div>
@@ -150,21 +193,41 @@ const togglePasswordConfirmation = () => {
                         <InputError class="mt-2" :message="form.errors.password_confirmation" />
                     </div>
 
-                    <!-- Role is hidden and defaults to 'umkm' -->
+                    <!-- Terms & Conditions -->
+                    <div class="flex items-start gap-3">
+                        <input 
+                            v-model="form.agree_terms" 
+                            type="checkbox" 
+                            id="agree_terms"
+                            required
+                            class="mt-1 w-4 h-4 text-blue-500 rounded border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-white/10"
+                        >
+                        <label for="agree_terms" class="text-sm text-gray-200">
+                            Saya setuju dengan 
+                            <Link href="/terms" class="text-blue-300 hover:text-blue-200 underline">
+                                Syarat & Ketentuan
+                            </Link>
+                            dan 
+                            <Link href="/privacy" class="text-blue-300 hover:text-blue-200 underline">
+                                Kebijakan Privasi
+                            </Link>
+                        </label>
+                    </div>
+                    <InputError class="mt-2" :message="form.errors.agree_terms" />
 
                     <div class="space-y-4">
                         <button
                             type="submit"
-                            class="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-green-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 shadow-lg"
+                            class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-xl hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 shadow-lg"
                             :class="{ 'opacity-50 cursor-not-allowed': form.processing }"
                             :disabled="form.processing"
                         >
                             <span v-if="form.processing">Mendaftar...</span>
-                            <span v-else>Daftar Sekarang</span>
+                            <span v-else>{{ isUmkm ? '🏪 Daftar sebagai UMKM' : '👤 Daftar Sekarang' }}</span>
                         </button>
 
                         <div class="text-center">
-                            <span class="text-gray-300 text-sm">Sudah punya akun? </span>
+                            <span class="text-gray-300 text-sm">{{ isUmkm ? 'Sudah punya akun UMKM?' : 'Sudah punya akun?' }} </span>
                             <Link :href="route('login')" class="text-blue-300 hover:text-blue-200 font-semibold text-sm">
                                 Masuk di sini
                             </Link>

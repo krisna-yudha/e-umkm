@@ -13,14 +13,16 @@ defineProps<{
     status?: string;
 }>();
 
+const userType = ref<'user' | 'umkm'>('user');
+const showPassword = ref(false);
+const urlMessage = ref('');
+
 const form = useForm({
     email: '',
     password: '',
+    user_type: 'user',
     remember: false,
 });
-
-const showPassword = ref(false);
-const urlMessage = ref('');
 
 // Check for message in URL parameters
 onMounted(() => {
@@ -34,10 +36,19 @@ onMounted(() => {
     }
 });
 
+// Update form user_type when tab changes
+const changeUserType = (type: 'user' | 'umkm') => {
+    userType.value = type;
+    form.user_type = type;
+};
+
 // Computed property to show either status or URL message
 const displayMessage = computed(() => {
     return urlMessage.value || '';
 });
+
+const isUmkm = computed(() => userType.value === 'umkm');
+const isUser = computed(() => userType.value === 'user');
 
 const submit = () => {
     form.post(route('login'), {
@@ -70,11 +81,39 @@ const togglePassword = () => {
                 <Link href="/" class="inline-block">
                     <h1 class="text-3xl font-extrabold text-white mb-2">Sistem UMKM</h1>
                 </Link>
-                <p class="text-gray-300">Masuk ke akun UMKM Anda</p>
+                <p class="text-gray-300">{{ isUmkm ? 'Masuk ke akun UMKM Anda' : 'Masuk ke akun pengguna Anda' }}</p>
             </div>
 
             <!-- Login Card -->
             <div class="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 shadow-2xl">
+                <!-- User Type Tabs -->
+                <div class="flex gap-2 mb-6 bg-white/5 p-1 rounded-lg border border-white/10">
+                    <button
+                        type="button"
+                        @click="changeUserType('user')"
+                        :class="[
+                            'flex-1 py-2 px-3 rounded-md font-semibold text-sm transition-all duration-200',
+                            isUser 
+                                ? 'bg-purple-600 text-white shadow-lg' 
+                                : 'text-gray-300 hover:text-white'
+                        ]"
+                    >
+                        👤 Pengguna
+                    </button>
+                    <button
+                        type="button"
+                        @click="changeUserType('umkm')"
+                        :class="[
+                            'flex-1 py-2 px-3 rounded-md font-semibold text-sm transition-all duration-200',
+                            isUmkm 
+                                ? 'bg-blue-600 text-white shadow-lg' 
+                                : 'text-gray-300 hover:text-white'
+                        ]"
+                    >
+                        🏪 UMKM
+                    </button>
+                </div>
+
                 <!-- Success Message from URL or Status -->
                 <div v-if="status || displayMessage" class="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg text-sm font-medium text-green-300">
                     {{ status || displayMessage }}
@@ -148,12 +187,15 @@ const togglePassword = () => {
                             :disabled="form.processing"
                         >
                             <span v-if="form.processing">Memproses...</span>
-                            <span v-else>Masuk</span>
+                            <span v-else>{{ isUmkm ? '🏪 Masuk sebagai UMKM' : '👤 Masuk' }}</span>
                         </button>
 
                         <div class="text-center">
-                            <span class="text-gray-300 text-sm">Belum punya akun? </span>
-                            <Link :href="route('register')" class="text-blue-300 hover:text-blue-200 font-semibold text-sm">
+                            <span class="text-gray-300 text-sm">{{ isUmkm ? 'Belum punya akun UMKM?' : 'Belum punya akun?' }} </span>
+                            <Link 
+                                :href="isUmkm ? route('register') + '?type=umkm' : route('register') + '?type=user'" 
+                                class="text-blue-300 hover:text-blue-200 font-semibold text-sm"
+                            >
                                 Daftar sekarang
                             </Link>
                         </div>

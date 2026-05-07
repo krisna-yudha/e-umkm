@@ -51,6 +51,32 @@ class Umkm extends Model
         return $this->hasMany(UmkmMenu::class);
     }
 
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    /**
+     * Get average rating for this UMKM
+     */
+    public function getAverageRatingAttribute()
+    {
+        return $this->ratings()->avg('rating') ?? 0;
+    }
+
+    /**
+     * Get total number of ratings
+     */
+    public function getRatingCountAttribute()
+    {
+        return $this->ratings()->count();
+    }
+
     /**
      * Scope to get only UMKM owned by the current user
      */

@@ -19,7 +19,8 @@ class TestUserSeeder extends Seeder
             [
                 'name' => 'Test User',
                 'password' => Hash::make('password123'),
-                'role' => 'umkm',
+                'role' => 'user',
+                'user_type' => 'umkm',
                 'email_verified_at' => now(),
             ]
         );

@@ -46,6 +46,7 @@ const showImageCropper = ref(false);
 const showNotification = ref(false);
 const notificationType = ref<'success' | 'error' | 'warning'>('success');
 const notificationMessage = ref('');
+const isDragOver = ref(false);
 let map: any = null;
 let searchTimeout: any = null;
 
@@ -112,6 +113,32 @@ const handleCropperError = (message: string) => {
     showNotification.value = true;
     notificationType.value = 'error';
     notificationMessage.value = message;
+};
+
+const handleDragOver = (event: DragEvent) => {
+    event.preventDefault();
+    isDragOver.value = true;
+};
+
+const handleDragLeave = () => {
+    isDragOver.value = false;
+};
+
+const handleDrop = (event: DragEvent) => {
+    event.preventDefault();
+    isDragOver.value = false;
+    
+    if (event.dataTransfer?.files) {
+        const files = event.dataTransfer.files;
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file.type.startsWith('image/')) {
+                form.gambar = file;
+                showImageCropper.value = true;
+                break;
+            }
+        }
+    }
 };
 
 const handleOperatingHoursChange = (hours: any) => {
@@ -535,7 +562,13 @@ onMounted(async () => {
                                             <span>Foto UMKM</span>
                                             <span class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">Opsional</span>
                                         </InputLabel>
-                                        <div class="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-purple-400 transition-colors duration-200 group-hover:bg-purple-25">
+                                        <div 
+                                            class="mt-2 border-2 border-dashed rounded-xl p-6 text-center transition-colors duration-200 group-hover:bg-purple-25"
+                                            :class="isDragOver ? 'border-purple-400 bg-purple-50' : 'border-gray-300 hover:border-purple-400'"
+                                            @dragover="handleDragOver"
+                                            @dragleave="handleDragLeave"
+                                            @drop="handleDrop"
+                                        >
                                             <input
                                                 id="gambar"
                                                 type="file"
@@ -551,7 +584,10 @@ onMounted(async () => {
                                                         </svg>
                                                     </div>
                                                     <div>
-                                                        <p class="text-sm font-medium text-gray-900">Klik untuk upload foto</p>
+                                                        <p class="mt-3 text-sm font-medium text-gray-700">Seret foto ke sini atau klik untuk memilih</p>
+                                                        <p class="mt-1 text-sm text-gray-600">
+                                                            <span class="font-medium text-purple-600">Drag & drop</span> file gambar Anda
+                                                        </p>
                                                         <p class="text-xs text-gray-500">PNG, JPG, GIF hingga 2MB</p>
                                                     </div>
                                                 </div>

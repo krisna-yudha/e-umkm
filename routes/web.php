@@ -7,6 +7,7 @@ use App\Http\Controllers\UmkmMenuController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Middleware\CheckUmkmType;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,14 @@ Route::get('/umkm-public/{umkm}', [DashboardController::class, 'publicUmkmShow']
 Route::get('/mapping', [DashboardController::class, 'mapping'])->name('mapping');
 Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('/articles/api', [ArticleController::class, 'api'])->name('articles.api');
+
+// Differentiated Login Routes - Consolidated into single login page
+// NOTE: These routes are overridden by auth.php which uses controllers
+// Keeping them here for reference, but auth.php provides the actual routes
+// Route::middleware('guest')->group(function () {
+//     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+//     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+// });
 
 // Password Reset Routes (Public)
 Route::get('/forgot-password', function () {
@@ -43,8 +52,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    // User Profile Route
-    Route::get('/user-profile', [UserProfileController::class, 'show'])->name('user.profile');
+    // User Profile Route - Only for UMKM users
+    Route::get('/user-profile', [UserProfileController::class, 'show'])
+        ->middleware([CheckUmkmType::class])
+        ->name('user.profile');
     
     // Help Route
     Route::get('/help', function () {
@@ -65,22 +76,24 @@ Route::middleware('auth')->group(function () {
         Route::post('/password-reset/{passwordResetRequest}/reject', [App\Http\Controllers\AdminController::class, 'rejectPasswordReset'])->name('admin.password-reset.reject');
     });
     
-    // UMKM routes - Create accessible to all authenticated users
-    Route::get('/umkm/create', [UmkmController::class, 'create'])->name('umkm.create');
-    Route::post('/umkm', [UmkmController::class, 'store'])->name('umkm.store');
-    Route::get('/umkm', [UmkmController::class, 'index'])->name('umkm.index');
-    Route::get('/umkm/{umkm}', [UmkmController::class, 'show'])->name('umkm.show');
-    Route::get('/umkm/{umkm}/edit', [UmkmController::class, 'edit'])->name('umkm.edit');
-    Route::put('/umkm/{umkm}', [UmkmController::class, 'update'])->name('umkm.update');
-    Route::patch('/umkm/{umkm}', [UmkmController::class, 'update']);
-    Route::patch('/umkm/{umkm}/toggle-status', [UmkmController::class, 'toggleStatus'])->name('umkm.toggleStatus');
-    Route::delete('/umkm/{umkm}', [UmkmController::class, 'destroy'])->name('umkm.destroy');
-    
-    // UMKM Menu routes
-    Route::resource('umkm.menu', UmkmMenuController::class)->parameters([
-        'umkm' => 'umkm',
-        'menu' => 'menu'
-    ]);
+    // UMKM routes - Only accessible to UMKM users
+    Route::middleware([CheckUmkmType::class])->group(function () {
+        Route::get('/umkm/create', [UmkmController::class, 'create'])->name('umkm.create');
+        Route::post('/umkm', [UmkmController::class, 'store'])->name('umkm.store');
+        Route::get('/umkm', [UmkmController::class, 'index'])->name('umkm.index');
+        Route::get('/umkm/{umkm}', [UmkmController::class, 'show'])->name('umkm.show');
+        Route::get('/umkm/{umkm}/edit', [UmkmController::class, 'edit'])->name('umkm.edit');
+        Route::put('/umkm/{umkm}', [UmkmController::class, 'update'])->name('umkm.update');
+        Route::patch('/umkm/{umkm}', [UmkmController::class, 'update']);
+        Route::patch('/umkm/{umkm}/toggle-status', [UmkmController::class, 'toggleStatus'])->name('umkm.toggleStatus');
+        Route::delete('/umkm/{umkm}', [UmkmController::class, 'destroy'])->name('umkm.destroy');
+        
+        // UMKM Menu routes
+        Route::resource('umkm.menu', UmkmMenuController::class)->parameters([
+            'umkm' => 'umkm',
+            'menu' => 'menu'
+        ]);
+    });
 });
 
 require __DIR__.'/auth.php';

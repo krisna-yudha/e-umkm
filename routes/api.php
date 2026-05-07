@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\UmkmApiController;
 use App\Http\Controllers\Api\MenuApiController;
 use App\Http\Controllers\Api\MapApiController;
 use App\Http\Controllers\Api\PasswordResetApiController;
+use App\Http\Controllers\Api\UserContributionController;
+use App\Http\Controllers\RatingController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -58,10 +61,16 @@ Route::prefix('v1')->group(function () {
         Route::get('/statistics', [MapApiController::class, 'getMapStatistics']);
         Route::get('/location/{id}', [MapApiController::class, 'getLocationDetails']);
     });
+
+    // Public Rating routes
+    Route::prefix('umkms')->group(function () {
+        Route::get('/{umkm}/ratings', [RatingController::class, 'index']);
+        Route::get('/{umkm}/wishlist/check', [WishlistController::class, 'check']);
+    });
 });
 
-// Protected routes (authentication required)
-Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
+// Protected routes (authentication required) - No CSRF for API
+Route::middleware(['auth:sanctum', 'api'])->prefix('v1')->group(function () {
     
     // Auth profile routes
     Route::prefix('auth')->group(function () {
@@ -84,6 +93,30 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         Route::post('/umkm/{umkmId}', [MenuApiController::class, 'store']);
         Route::put('/umkm/{umkmId}/{menuId}', [MenuApiController::class, 'update']);
         Route::delete('/umkm/{umkmId}/{menuId}', [MenuApiController::class, 'destroy']);
+    });
+
+    // Protected Rating routes
+    Route::prefix('umkms')->group(function () {
+        Route::post('/{umkm}/ratings', [RatingController::class, 'store']);
+        Route::post('/{umkm}/wishlist', [WishlistController::class, 'store']);
+        Route::delete('/{umkm}/wishlist', [WishlistController::class, 'destroy']);
+    });
+
+    Route::prefix('ratings')->group(function () {
+        Route::delete('/{rating}', [RatingController::class, 'destroy']);
+        Route::post('/{rating}/helpful', [RatingController::class, 'markHelpful']);
+    });
+
+    // Wishlist endpoints
+    Route::prefix('wishlist')->group(function () {
+        Route::get('/', [WishlistController::class, 'index']);
+    });
+
+    // User Contribution routes
+    Route::prefix('user')->group(function () {
+        Route::get('/ratings', [UserContributionController::class, 'getUserRatings']);
+        Route::get('/wishlist', [UserContributionController::class, 'getUserWishlist']);
+        Route::get('/stats', [UserContributionController::class, 'getContributionStats']);
     });
 });
 

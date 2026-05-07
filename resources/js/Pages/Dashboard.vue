@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ref, onMounted, onUnmounted } from 'vue';
 
 interface User {
@@ -8,6 +8,7 @@ interface User {
     name: string;
     email: string;
     profile_photo?: string;
+    user_type?: string;
 }
 
 interface Article {
@@ -29,6 +30,15 @@ defineProps<{
 const articles = ref<Article[]>([]);
 const loading = ref(true);
 const showDropdown = ref(false);
+
+// Create logout form for proper CSRF handling
+const logoutForm = useForm({});
+
+// Handle logout using form for proper CSRF token handling
+const handleLogout = () => {
+    showDropdown.value = false;
+    logoutForm.post(route('logout'));
+};
 
 // Toggle dropdown
 const toggleDropdown = () => {
@@ -151,17 +161,15 @@ onMounted(() => {
                                 v-show="showDropdown"
                                 class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 transition-all duration-200"
                             >
-                                <Link 
-                                    :href="route('logout')" 
-                                    method="post" 
-                                    as="button"
+                                <button 
+                                    @click="handleLogout"
                                     class="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 border-b border-gray-100"
                                 >
                                     <svg class="w-4 h-4 mr-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                     </svg>
                                     Log Out
-                                </Link>
+                                </button>
                                 <button 
                                     @click="showDropdown = false"
                                     class="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 rounded-b-lg"
@@ -178,19 +186,19 @@ onMounted(() => {
             </div>
         </template> -->
 
-        <div class="py-6 sm:py-12">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="py-4 sm:py-8 md:py-12">
+            <div class="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8">
                 <!-- Welcome Section with User Profile -->
-                <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl p-6 sm:p-8 mb-4 text-white">
-                    <div class="flex flex-col lg:flex-row items-center justify-between">
+                <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 text-white">
+                    <div class="flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6">
                         <!-- User Profile Section - Clickable Card -->
                         <Link 
                             :href="route('user.profile')"
-                            class="flex items-center space-x-6 mb-6 lg:mb-0 cursor-pointer hover:bg-white hover:bg-opacity-10 rounded-2xl p-4 transition-all duration-300 group w-full lg:w-auto"
+                            class="flex items-center space-x-3 sm:space-x-4 md:space-x-6 cursor-pointer hover:bg-white hover:bg-opacity-10 rounded-2xl p-3 sm:p-4 transition-all duration-300 group w-full lg:w-auto"
                         >
-                            <div class="relative">
+                            <div class="relative flex-shrink-0">
                                 <!-- Profile Photo or Default Avatar -->
-                                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border-4 border-white border-opacity-30 shadow-xl group-hover:border-opacity-50 transition-all duration-300">
+                                <div class="w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 rounded-full overflow-hidden border-4 border-white border-opacity-30 shadow-xl group-hover:border-opacity-50 transition-all duration-300">
                                     <!-- Show profile photo if available -->
                                     <img 
                                         v-if="auth.user.profile_photo" 
@@ -204,31 +212,31 @@ onMounted(() => {
                                     />
                                     <!-- Default Avatar when no profile photo or image fails to load -->
                                     <div :class="auth.user.profile_photo ? 'hidden' : 'flex'" class="w-full h-full bg-gradient-to-br from-white from-opacity-20 to-white to-opacity-10 items-center justify-center">
-                                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
-                                            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <div class="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-white bg-opacity-30 rounded-full flex items-center justify-center">
+                                            <svg class="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                             </svg>
                                         </div>
                                     </div>
                                 </div>
                                 <!-- Online status indicator -->
-                                <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-2 border-white shadow-lg"></div>
+                                <div class="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 bg-green-400 rounded-full border-2 border-white shadow-lg"></div>
                                 <!-- Edit Icon Overlay -->
-                                <div class="absolute -top-1 -right-1 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <div class="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg">
+                                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                     </svg>
                                 </div>
                             </div>
-                            <div class="text-left">
-                                <h1 class="text-2xl sm:text-3xl font-bold mb-2 group-hover:text-purple-100 transition-colors duration-300">{{ auth.user.name }}</h1>
-                                <p class="text-purple-100 text-sm mb-2 group-hover:text-white transition-colors duration-300">{{ auth.user.email }}</p>
-                                <div class="flex items-center mb-2">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500 bg-opacity-30 text-purple-100 border border-purple-300 border-opacity-30 group-hover:bg-opacity-50 transition-all duration-300">
-                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <div class="text-left flex-1">
+                                <h1 class="text-lg sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2 group-hover:text-purple-100 transition-colors duration-300 line-clamp-1">{{ auth.user.name }}</h1>
+                                <p class="text-purple-100 text-xs sm:text-sm mb-1 sm:mb-2 group-hover:text-white transition-colors duration-300 line-clamp-1">{{ auth.user.email }}</p>
+                                <div class="flex items-center">
+                                    <span class="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-purple-500 bg-opacity-30 text-purple-100 border border-purple-300 border-opacity-30 group-hover:bg-opacity-50 transition-all duration-300 whitespace-nowrap">
+                                        <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" clip-rule="evenodd"/>
                                         </svg>
-                                        Pelaku UMKM
+                                        {{ auth.user.user_type === 'umkm' ? 'Pelaku UMKM' : 'Pembeli Biasa' }}
                                     </span>
                                 </div>
                                 <!-- <div class="flex items-center text-xs text-purple-200 group-hover:text-white transition-colors duration-300">
@@ -241,73 +249,73 @@ onMounted(() => {
                         </Link>
 
                         <!-- Quick Stats -->
-                        <div class="flex flex-col space-y-1 text-center lg:text-right">
-                            <p class="text-purple-100 text-sm">Platform UMKM Digital</p>
+                        <div class="sm:flex hidden flex-col space-y-1 text-center lg:text-right">
+                            <p class="text-purple-100 text-xs sm:text-sm">Platform UMKM Digital</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Articles/News Section -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xl sm:text-2xl font-bold text-gray-800">
+                <div class="mb-6 sm:mb-8">
+                    <div class="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+                        <h2 class="text-base sm:text-xl md:text-2xl font-bold text-gray-800">
                             Informasi & Tips UMKM
                         </h2>
-                        <Link :href="route('articles.index')" class="text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors duration-200">
+                        <Link :href="route('articles.index')" class="text-purple-600 hover:text-purple-700 font-medium text-xs sm:text-sm transition-colors duration-200 whitespace-nowrap">
                             Lihat Semua
                         </Link>
                     </div>
 
                     <!-- Loading State -->
-                    <div v-if="loading" class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        <div v-for="i in 3" :key="i" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-pulse">
-                            <div class="h-40 sm:h-48 bg-gray-200"></div>
-                            <div class="p-4 sm:p-6">
-                                <div class="h-4 bg-gray-200 rounded mb-2"></div>
-                                <div class="h-3 bg-gray-200 rounded mb-4"></div>
+                    <div v-if="loading" class="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <div v-for="i in 3" :key="i" class="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-pulse">
+                            <div class="h-32 sm:h-40 md:h-48 bg-gray-200"></div>
+                            <div class="p-3 sm:p-4 md:p-6">
+                                <div class="h-3 bg-gray-200 rounded mb-2"></div>
+                                <div class="h-2.5 bg-gray-200 rounded mb-3"></div>
                                 <div class="flex justify-between">
-                                    <div class="h-3 bg-gray-200 rounded w-16"></div>
-                                    <div class="h-3 bg-gray-200 rounded w-20"></div>
+                                    <div class="h-2.5 bg-gray-200 rounded w-12 sm:w-16"></div>
+                                    <div class="h-2.5 bg-gray-200 rounded w-16 sm:w-20"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Articles Grid -->
-                    <div v-else class="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div v-else class="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         <article 
                             v-for="(article, index) in articles" 
                             :key="article.id || index" 
-                            class="bg-white rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden"
+                            class="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 hover:scale-105 sm:hover:scale-[1.02] overflow-hidden"
                         >
-                            <div class="relative h-40 sm:h-48 overflow-hidden">
+                            <div class="relative h-32 sm:h-40 md:h-48 overflow-hidden">
                                 <img 
                                     :src="article.image || '/kotasmg.png'" 
                                     :alt="article.title"
                                     class="w-full h-full object-cover"
                                     @error="(event) => (event.target as HTMLImageElement).src = '/kotasmg.png'"
                                 />
-                                <div class="absolute top-3 left-3">
-                                    <span :class="`${getCategoryColor(article.category)} text-white px-2 py-1 rounded-full text-xs font-medium`">
+                                <div class="absolute top-2 left-2 sm:top-3 sm:left-3">
+                                    <span :class="`${getCategoryColor(article.category)} text-white px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium`">
                                         {{ article.category }}
                                     </span>
                                 </div>
                             </div>
                             
-                            <div class="p-4 sm:p-6">
-                                <h3 class="font-bold text-base sm:text-lg text-gray-800 mb-2 line-clamp-2">
+                            <div class="p-3 sm:p-4 md:p-6">
+                                <h3 class="font-bold text-sm sm:text-base md:text-lg text-gray-800 mb-1 sm:mb-2 line-clamp-2">
                                     {{ article.title }}
                                 </h3>
-                                <p class="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-3">
+                                <p class="text-gray-600 text-xs mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3">
                                     {{ article.excerpt }}
                                 </p>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs text-gray-500">{{ article.date }}</span>
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-xs text-gray-500 truncate">{{ article.date }}</span>
                                     <a 
                                         :href="article.link" 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        class="text-purple-600 hover:text-purple-700 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center gap-1"
+                                        class="text-purple-600 hover:text-purple-700 font-medium text-xs transition-colors duration-200 flex items-center gap-1 whitespace-nowrap"
                                     >
                                         Baca Selengkapnya
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

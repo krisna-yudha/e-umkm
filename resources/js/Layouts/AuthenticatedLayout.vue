@@ -1,18 +1,31 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage, router, useForm } from '@inertiajs/vue3';
 
+const page = usePage();
 const showingNavigationDropdown = ref(false);
 const showingUserMenu = ref(false);
+
+// Helper to safely access user_type
+const userType = computed(() => (page.props.auth?.user as any)?.user_type);
+
+// Create logout form for proper CSRF handling
+const logoutForm = useForm({});
 
 const closeUserMenu = () => {
     setTimeout(() => {
         showingUserMenu.value = false;
     }, 150);
+};
+
+// Handle logout using form for proper CSRF token handling
+const handleLogout = () => {
+    showingUserMenu.value = false;
+    logoutForm.post(route('logout'));
 };
 </script>
 
@@ -73,7 +86,7 @@ const closeUserMenu = () => {
                                     
                                     <div class="text-left">
                                         <p class="text-sm font-semibold text-gray-900">{{ $page.props.auth.user.name }}</p>
-                                        <p class="text-xs text-gray-500">{{ ($page.props.auth.user as any).role === 'admin' ? 'Administrator' : 'Pelaku UMKM' }}</p>
+                                        <p class="text-xs text-gray-500">{{ ($page.props.auth.user as any).role === 'admin' ? 'Administrator' : (($page.props.auth.user as any).user_type === 'umkm' ? 'Pelaku UMKM' : 'Users') }}</p>
                                     </div>
 
                                     <svg
@@ -125,7 +138,7 @@ const closeUserMenu = () => {
                                                     <h3 class="font-semibold text-lg">{{ $page.props.auth.user.name }}</h3>
                                                     <p class="text-blue-100 text-sm">{{ $page.props.auth.user.email }}</p>
                                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white mt-1">
-                                                        {{ ($page.props.auth.user as any).role === 'admin' ? '👑 Administrator' : '🏢 Pelaku UMKM' }}
+                                                        {{ ($page.props.auth.user as any).role === 'admin' ? '👑 Administrator' : (($page.props.auth.user as any).user_type === 'umkm' ? '🏢 Pelaku UMKM' : '👤 Pembeli Biasa') }}
                                                     </span>
                                                 </div>
                                             </div>
@@ -198,19 +211,22 @@ const closeUserMenu = () => {
                                                 <div class="px-4 py-2">
                                                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Akun Saya</p>
                                                 </div>
-                                                <Link
-                                                    :href="route('user.profile')"
-                                                    class="flex items-center px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150"
-                                                    @click="showingUserMenu = false"
-                                                >
-                                                    <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                                                        <span class="text-gray-600">👤</span>
-                                                    </div>
-                                                    <div>
-                                                        <p class="font-medium">Dashboard Profil</p>
-                                                        <p class="text-xs text-gray-500">Lihat profil dan UMKM</p>
-                                                    </div>
-                                                </Link>
+                                                <!-- Dashboard Profil (only for UMKM users) -->
+                                                <template v-if="userType === 'umkm'">
+                                                    <Link
+                                                        :href="route('user.profile')"
+                                                        class="flex items-center px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150"
+                                                        @click="showingUserMenu = false"
+                                                    >
+                                                        <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                                                            <span class="text-gray-600">👤</span>
+                                                        </div>
+                                                        <div>
+                                                            <p class="font-medium">Dashboard Profil</p>
+                                                            <p class="text-xs text-gray-500">Lihat profil dan UMKM</p>
+                                                        </div>
+                                                    </Link>
+                                                </template>
                                                 <Link
                                                     :href="route('profile.edit')"
                                                     class="flex items-center px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150"
@@ -242,12 +258,9 @@ const closeUserMenu = () => {
 
                                             <div class="border-t border-gray-100 my-2"></div>
                                             
-                                            <Link
-                                                :href="route('logout')"
-                                                method="post"
-                                                as="button"
+                                            <button
+                                                @click="handleLogout"
                                                 class="w-full flex items-center px-6 py-3 text-sm text-red-700 hover:bg-red-50 transition-colors duration-150"
-                                                @click="showingUserMenu = false"
                                             >
                                                 <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
                                                     <span class="text-red-600">🚪</span>
@@ -256,7 +269,7 @@ const closeUserMenu = () => {
                                                     <p class="font-medium">Keluar</p>
                                                     <p class="text-xs text-red-500">Logout dari akun</p>
                                                 </div>
-                                            </Link>
+                                            </button>
                                         </div>
                                     </div>
                                 </Transition>
@@ -322,7 +335,8 @@ const closeUserMenu = () => {
                     <div
                         class="border-t border-gray-200 pb-1 pt-4"
                     >
-                        <div class="px-4">
+                        <!-- Hidden on mobile - only show menu items -->
+                        <div class="hidden sm:block px-4">
                             <div
                                 class="text-base font-medium text-gray-800"
                             >
@@ -334,19 +348,22 @@ const closeUserMenu = () => {
                         </div>
 
                         <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="route('user.profile')">
+                            <!-- Dashboard Profil (only for UMKM users) -->
+                            <ResponsiveNavLink 
+                                v-if="userType === 'umkm'"
+                                :href="route('user.profile')"
+                            >
                                 👤 Dashboard Profil
                             </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('profile.edit')">
                                 ⚙️ Edit Profil
                             </ResponsiveNavLink>
-                            <ResponsiveNavLink
-                                :href="route('logout')"
-                                method="post"
-                                as="button"
+                            <button
+                                @click="handleLogout"
+                                class="w-full text-start block px-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
                             >
                                 🚪 Log Out
-                            </ResponsiveNavLink>
+                            </button>
                         </div>
                     </div>
                 </div>

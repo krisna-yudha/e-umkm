@@ -43,9 +43,11 @@ class AuthenticatedSessionController extends Controller
     {
         Auth::guard('web')->logout();
 
-        $request->session()->invalidate();
-
+        // Regenerate token BEFORE invalidating session
+        // This ensures CSRF token is available in response headers
         $request->session()->regenerateToken();
+
+        $request->session()->invalidate();
 
         return redirect('/');
     }

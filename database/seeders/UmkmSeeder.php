@@ -19,20 +19,31 @@ class UmkmSeeder extends Seeder
             [
                 'name' => 'Sari Dewi',
                 'email' => 'sari.dewi@example.com',
-                'role' => 'umkm',
+                'role' => 'user',
+                'user_type' => 'umkm',
                 'password' => Hash::make('password'),
             ],
             [
                 'name' => 'Budi Santoso',
                 'email' => 'budi.santoso@example.com',
-                'role' => 'umkm',
+                'role' => 'user',
+                'user_type' => 'umkm',
+                'password' => Hash::make('password'),
+            ],
+             [
+                'name' => 'Umkm',
+                'email' => 'umkm@example.com',
+                'role' => 'user',
+                'user_type' => 'umkm',
                 'password' => Hash::make('password'),
             ],
             [
                 'name' => 'Rina Kartika',
                 'email' => 'rina.kartika@example.com',
-                'role' => 'umkm',
+                'role' => 'user',
+                'user_type' => 'umkm',
                 'password' => Hash::make('password'),
+
             ],
         ];
 
@@ -49,6 +60,7 @@ class UmkmSeeder extends Seeder
             'name' => 'Regular User',
             'email' => 'user@example.com',
             'role' => 'user',
+            'user_type' => 'user',
             'password' => Hash::make('password'),
         ]);
     }

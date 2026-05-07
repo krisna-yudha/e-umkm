@@ -28,11 +28,25 @@ class DashboardController extends Controller
             return redirect()->route('admin.dashboard');
         }
         
-        return Inertia::render('Dashboard', [
-            'auth' => [
-                'user' => $user
-            ]
-        ]);
+        // Ensure user has a valid user_type
+        if (!$user) {
+            return redirect()->route('login');
+        }
+        
+        // Strict routing based on user_type from database
+        if ($user->user_type === 'user') {
+            return Inertia::render('UserDashboard', [
+                'auth' => ['user' => $user]
+            ]);
+        } elseif ($user->user_type === 'umkm') {
+            return Inertia::render('Dashboard', [
+                'auth' => ['user' => $user]
+            ]);
+        }
+        
+        // If user_type is invalid/NULL, force logout and redirect to login
+        Auth::logout();
+        return redirect()->route('login')->with('error', 'User type tidak valid. Silakan login kembali.');
     }
 
     public function mapping()
@@ -88,9 +102,6 @@ class DashboardController extends Controller
         
         return Inertia::render('PublicUmkmListSimple', [
             'umkms' => $umkms,
-            'auth' => [
-                'user' => Auth::user()
-            ]
         ]);
     }
 
@@ -103,9 +114,6 @@ class DashboardController extends Controller
 
         return Inertia::render('PublicUmkmShow', [
             'umkm' => $umkm,
-            'auth' => [
-                'user' => Auth::user()
-            ]
         ]);
     }
 }
