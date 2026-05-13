@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, unref } from 'vue';
 import axios from 'axios';
 
 interface User {
@@ -38,6 +38,7 @@ const ratings = ref<RatingData[]>([]);
 const stats = ref<RatingStats | null>(null);
 const isLoading = ref(false);
 const isSubmitting = ref(false);
+const resolvedUser = ref<User | null>(props.currentUser ?? null);
 
 // Form state
 const userRating = ref(0);
@@ -46,7 +47,7 @@ const existingRating = ref<RatingData | null>(null);
 const hoverRating = ref(0);
 
 // Debug: Log current user
-console.log('RatingSection - currentUser:', props.currentUser);
+console.log('RatingSection - raw currentUser prop:', props.currentUser);
 const csrfToken = window.axios.defaults.headers.common['X-CSRF-TOKEN'];
 console.log('RatingSection - axios config:', {
     withCredentials: window.axios.defaults.withCredentials,
@@ -58,9 +59,15 @@ console.log('RatingSection - axios config:', {
 
 const canEditRating = computed(() => {
     // Sederhana: Jika user ada = bisa rating. Backend akan validate user_type
-    const canRate = !!props.currentUser;
-    console.log('canEditRating:', canRate, 'User:', props.currentUser?.name || 'None');
+    const user = resolvedUser.value;
+    const canRate = !!user;
+    console.log('canEditRating:', canRate, 'User:', user?.name || 'None');
     return canRate;
+});
+
+// Simple logged-in flag to use in template and logic (unwrap Ref/computed if needed)
+const isLoggedIn = computed(() => {
+    return !!resolvedUser.value;
 });
 
 const isEditingRating = computed(() => {
@@ -95,9 +102,10 @@ const loadRatings = async () => {
             distribution: response.data.distribution,
         };
 
-        // Check if current user has already rated
-        if (props.currentUser) {
-            existingRating.value = ratings.value.find(r => r.user.id === props.currentUser?.id) || null;
+        // Check if current user has already rated (support Ref/computed from parent)
+        const uc = resolvedUser.value;
+        if (uc) {
+            existingRating.value = ratings.value.find(r => r.user.id === uc.id) || null;
             if (existingRating.value) {
                 userRating.value = existingRating.value.rating;
                 userReview.value = existingRating.value.review || '';
@@ -107,6 +115,23 @@ const loadRatings = async () => {
         console.error('Error loading ratings:', error);
     } finally {
         isLoading.value = false;
+    }
+};
+
+const resolveAuthUser = async () => {
+    if (resolvedUser.value) {
+        return;
+    }
+
+    try {
+        const response = await axios.get('/api/v1/auth/profile');
+        resolvedUser.value = response.data?.data ?? null;
+        console.log('Resolved auth user from API:', resolvedUser.value);
+    } catch (error: any) {
+        if (error.response?.status !== 401) {
+            console.error('Error resolving auth user:', error);
+        }
+        resolvedUser.value = null;
     }
 };
 
@@ -126,7 +151,7 @@ const submitRating = async () => {
     isSubmitting.value = true;
     try {
         console.log('=== SUBMITTING RATING ===');
-        console.log('User:', props.currentUser);
+        console.log('User:', unref((props as any).currentUser));
         console.log('UMKM ID:', props.umkm.id);
         console.log('Rating:', userRating.value);
         console.log('Axios defaults:', {
@@ -217,7 +242,7 @@ const markHelpful = async (ratingId: number) => {
 };
 
 onMounted(() => {
-    loadRatings();
+    Promise.all([resolveAuthUser(), loadRatings()]);
 });
 
 // Star rendering
@@ -334,7 +359,7 @@ const getStarClass = (index: number, ratingValue: number) => {
             </div>
 
             <!-- Login CTA -->
-            <div v-else-if="!currentUser" class="mb-8 pb-8 border-b border-gray-100">
+            <div v-else-if="!isLoggedIn" class="mb-8 pb-8 border-b border-gray-100">
                 <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-4 sm:p-6 rounded-lg border border-amber-200 text-center">
                     <p class="text-gray-900 font-medium mb-3">Masuk untuk memberikan rating dan ulasan</p>
                     <a href="/login/user" class="inline-block px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all">

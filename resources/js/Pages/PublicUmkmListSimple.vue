@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 
 // Interface for user
 interface User {
@@ -35,17 +35,34 @@ interface PaginationData {
 // Props with pagination data
 const props = defineProps<{
     umkms: PaginationData;
+    auth?: {
+        user: User | null;
+    };
 }>();
 
 // Get auth from Inertia shared data
 const page = usePage();
 const currentUser = computed(() => {
-    return page.props.auth?.user as User | null;
+    return (props.auth?.user ?? page.props.auth?.user) as User | null;
 });
 
 const isAuthenticated = computed(() => {
-    return Boolean(page.props.auth?.user);
+    return Boolean(props.auth?.user ?? page.props.auth?.user);
 });
+
+// Debug: log auth props and watch for changes
+onMounted(() => {
+    // eslint-disable-next-line no-console
+    console.log('PublicUmkmListSimple - initial auth:', page.props.auth?.user);
+});
+
+watch(
+    () => page.props.auth?.user,
+    (newVal, oldVal) => {
+        // eslint-disable-next-line no-console
+        console.log('PublicUmkmListSimple - auth changed:', { oldVal, newVal });
+    }
+);
 
 // Search functionality
 const searchQuery = ref('');

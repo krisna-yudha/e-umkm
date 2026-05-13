@@ -102,6 +102,9 @@ class DashboardController extends Controller
         
         return Inertia::render('PublicUmkmListSimple', [
             'umkms' => $umkms,
+            'auth' => [
+                'user' => Auth::user(),
+            ],
         ]);
     }
 
@@ -114,6 +117,9 @@ class DashboardController extends Controller
 
         return Inertia::render('PublicUmkmShow', [
             'umkm' => $umkm,
+            'auth' => [
+                'user' => Auth::user(),
+            ],
         ]);
     }
 }

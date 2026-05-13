@@ -52,11 +52,14 @@ interface Umkm {
 
 const props = defineProps<{
     umkm: Umkm;
+    auth?: {
+        user: User | null;
+    };
 }>();
 
 // Get auth from Inertia shared data
 const page = usePage();
-const currentUser = computed(() => page.props.auth?.user as User | null);
+const currentUser = computed(() => (props.auth?.user ?? page.props.auth?.user) as User | null);
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
