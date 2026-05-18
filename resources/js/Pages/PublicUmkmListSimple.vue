@@ -90,7 +90,7 @@ const homeRoute = computed(() => {
 // Determine home button text based on auth status
 const homeButtonText = computed(() => {
     if (currentUser.value) {
-        return `Dashboard (${currentUser.value.name})`;
+        return `Dashboard `;
     }
     return 'Kembali ke Beranda';
 });
@@ -185,7 +185,7 @@ const isSearching = computed(() => {
 
                             <!-- Login Button untuk User Biasa (Jika belum login) -->
                             <Link 
-                                v-if="!isAuthenticated"
+                                v-if="!currentUser"
                                 href="/login" 
                                 class="hidden sm:flex group relative overflow-hidden bg-purple-500 bg-opacity-20 backdrop-blur-md border border-purple-400 border-opacity-30 rounded-2xl p-4 hover:bg-opacity-30 transition-all duration-300 shadow-xl"
                             >
@@ -201,17 +201,17 @@ const isSearching = computed(() => {
 
                             <!-- Dashboard Button (Jika sudah login) -->
                             <Link 
-                                v-if="isAuthenticated"
+                                v-if="currentUser"
                                 href="/dashboard" 
                                 class="hidden sm:flex group relative overflow-hidden bg-green-500 bg-opacity-20 backdrop-blur-md border border-green-400 border-opacity-30 rounded-2xl p-4 hover:bg-opacity-30 transition-all duration-300 shadow-xl"
                             >
                                 <div class="flex items-center justify-center space-x-3">
                                     <div class="w-12 h-12 bg-green-500 bg-opacity-30 rounded-xl flex items-center justify-center">
                                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
                                     </div>
-                                    <span class="text-white font-semibold">Dashboard</span>
+                                    <span class="text-white font-semibold">Logged In</span>
                                 </div>
                             </Link>
 
@@ -244,7 +244,7 @@ const isSearching = computed(() => {
 
                                 <!-- Login Button Mobile (Jika belum login) -->
                                 <Link 
-                                    v-if="!isAuthenticated"
+                                    v-if="!currentUser"
                                     href="/login" 
                                     class="group flex-1 relative overflow-hidden bg-purple-500 bg-opacity-20 backdrop-blur-md border border-purple-400 border-opacity-30 rounded-lg p-2 hover:bg-opacity-30 transition-all duration-300"
                                 >
@@ -258,13 +258,13 @@ const isSearching = computed(() => {
 
                                 <!-- Dashboard Button Mobile (Jika sudah login) -->
                                 <Link 
-                                    v-if="isAuthenticated"
+                                    v-if="currentUser"
                                     href="/dashboard" 
                                     class="group flex-1 relative overflow-hidden bg-green-500 bg-opacity-20 backdrop-blur-md border border-green-400 border-opacity-30 rounded-lg p-2 hover:bg-opacity-30 transition-all duration-300"
                                 >
                                     <div class="flex items-center justify-center gap-1">
                                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
                                         <span class="text-white font-semibold text-xs">Dash</span>
                                     </div>

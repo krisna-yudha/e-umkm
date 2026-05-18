@@ -69,7 +69,7 @@ Route::prefix('v1')->group(function () {
     });
 });
 
-// Protected routes (authentication required) - No CSRF for API
+// Protected Sanctum routes (authentication required - Token Based)
 Route::middleware(['auth:sanctum', 'api'])->prefix('v1')->group(function () {
     
     // Auth profile routes
@@ -95,18 +95,6 @@ Route::middleware(['auth:sanctum', 'api'])->prefix('v1')->group(function () {
         Route::delete('/umkm/{umkmId}/{menuId}', [MenuApiController::class, 'destroy']);
     });
 
-    // Protected Rating routes
-    Route::prefix('umkms')->group(function () {
-        Route::post('/{umkm}/ratings', [RatingController::class, 'store']);
-        Route::post('/{umkm}/wishlist', [WishlistController::class, 'store']);
-        Route::delete('/{umkm}/wishlist', [WishlistController::class, 'destroy']);
-    });
-
-    Route::prefix('ratings')->group(function () {
-        Route::delete('/{rating}', [RatingController::class, 'destroy']);
-        Route::post('/{rating}/helpful', [RatingController::class, 'markHelpful']);
-    });
-
     // Wishlist endpoints
     Route::prefix('wishlist')->group(function () {
         Route::get('/', [WishlistController::class, 'index']);
@@ -120,6 +108,27 @@ Route::middleware(['auth:sanctum', 'api'])->prefix('v1')->group(function () {
     });
 });
 
+// Protected Session Auth routes (for web-based users with cookies)
+// Middleware order is critical:
+// 1. StartSession FIRST to load session from cookie
+// 2. Then auth check to verify user
+Route::middleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \App\Http\Middleware\AuthenticateWithSession::class,
+])->prefix('v1')->group(function () {
+    // Rating routes (support session auth for public users)
+    Route::prefix('umkms')->group(function () {
+        Route::post('/{umkm}/ratings', [RatingController::class, 'store']);
+        Route::post('/{umkm}/wishlist', [WishlistController::class, 'store']);
+        Route::delete('/{umkm}/wishlist', [WishlistController::class, 'destroy']);
+    });
+
+    Route::prefix('ratings')->group(function () {
+        Route::delete('/{rating}', [RatingController::class, 'destroy']);
+        Route::post('/{rating}/helpful', [RatingController::class, 'markHelpful']);
+    });
+});
+
 // Health check route
 Route::get('/health', function () {
     return response()->json([
@@ -127,5 +136,21 @@ Route::get('/health', function () {
         'message' => 'E-UMKM API is running',
         'timestamp' => now(),
         'version' => '1.0.0'
+    ]);
+});
+
+// DEBUG: Session check endpoint (with session middleware)
+Route::middleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+])->get('/debug/session', function (Request $request) {
+    return response()->json([
+        'session_id' => session()->getId(),
+        'session_data' => session()->all(),
+        'auth_check_web' => \Illuminate\Support\Facades\Auth::guard('web')->check(),
+        'auth_user' => \Illuminate\Support\Facades\Auth::user(),
+        'cookies' => [
+            'LARAVEL_SESSION' => $request->cookie('LARAVEL_SESSION') ? substr($request->cookie('LARAVEL_SESSION'), 0, 20) . '...' : null,
+            'all_cookie_names' => array_keys($request->cookies->all()),
+        ],
     ]);
 });

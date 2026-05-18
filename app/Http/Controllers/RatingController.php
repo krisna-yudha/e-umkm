@@ -15,46 +15,110 @@ class RatingController extends Controller
      */
     public function store(Request $request, Umkm $umkm)
     {
-        // Debug logging
-        Log::info('=== RATING STORE REQUEST ===', [
+        // Comprehensive debug logging
+        $sessionUserType = session('user_type', 'user');
+        $sessionUserId = session('user_id');
+        $sessionData = session()->all();
+        $authCheck = Auth::check();
+        $authUser = Auth::user();
+        
+        Log::info('=== RATING STORE REQUEST - DETAILED DEBUG ===', [
+            'timestamp' => now(),
             'url' => $request->url(),
             'method' => $request->method(),
-            'auth_check' => Auth::check(),
-            'user_id' => Auth::id(),
-            'user_name' => Auth::user()?->name ?? 'null',
-            'user_type' => Auth::user()?->user_type ?? 'null',
+            'umkm_id' => $umkm->id,
         ]);
 
-        // Validate that user is logged in and is a regular user (not UMKM owner)
-        if (!Auth::check()) {
-            Log::warning('❌ Auth::check() failed - user not authenticated');
-            return response()->json(['error' => 'Anda harus login terlebih dahulu', 'debug' => 'Auth::check() = false'], 401);
+        Log::info('AUTH STATUS', [
+            'auth_check' => $authCheck,
+            'auth_id' => Auth::id(),
+            'auth_guard' => Auth::getDefaultDriver(),
+            'auth_user_id' => $authUser?->id,
+            'auth_user_name' => $authUser?->name,
+            'auth_user_type' => $authUser?->user_type,
+        ]);
+
+        Log::info('SESSION STATUS', [
+            'session_id' => session()->getId(),
+            'session_exists' => session()->has('user_id'),
+            'session_user_id' => $sessionUserId,
+            'session_user_type' => $sessionUserType,
+            'session_all_keys' => array_keys($sessionData),
+        ]);
+
+        Log::info('REQUEST HEADERS', [
+            'has_csrf_token' => $request->header('X-CSRF-TOKEN') ? 'YES' : 'NO',
+            'has_cookie_header' => $request->header('Cookie') ? 'YES' : 'NO',
+            'laravel_session_cookie' => $request->cookie('LARAVEL_SESSION') ? substr($request->cookie('LARAVEL_SESSION'), 0, 20) . '...' : 'MISSING',
+        ]);
+
+        // Check authentication
+        if (!$authCheck) {
+            Log::error('❌ AUTHENTICATION FAILED - Auth::check() returned false', [
+                'session_id' => session()->getId(),
+                'session_has_user_id' => session()->has('user_id'),
+            ]);
+            
+            return response()->json([
+                'error' => 'Sesi Anda telah berakhir. Silakan login terlebih dahulu',
+                'debug' => [
+                    'auth_check' => false,
+                    'session_id' => session()->getId(),
+                    'session_has_user' => session()->has('user_id'),
+                ]
+            ], 401);
         }
 
         /** @var \App\Models\User $user */
-        $user = Auth::user();
-        Log::info('✅ User authenticated:', ['user_id' => $user->id, 'name' => $user->name, 'user_type' => $user->user_type]);
+        $user = $authUser;
+        $userType = $user->user_type ?? 'user';
         
-        // REJECT hanya jika user adalah UMKM owner
-        // ALLOW jika: user_type = 'user' ATAU user_type = NULL (old users) ATAU admin
-        if ($user->user_type === 'umkm') {
-            return response()->json(['error' => 'UMKM owner tidak dapat memberikan rating'], 403);
+        Log::info('✅ USER AUTHENTICATED', [
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'user_email' => $user->email,
+            'user_type' => $userType,
+        ]);
+        
+        // Check if UMKM owner
+        if ($userType === 'umkm') {
+            Log::warning('❌ UMKM OWNER TRIED TO RATE', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'umkm_id' => $umkm->id,
+            ]);
+            return response()->json([
+                'error' => 'UMKM owner tidak dapat memberikan rating'
+            ], 403);
         }
 
         // Validate input
-        $validated = $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'review' => 'nullable|string|max:1000',
-        ]);
+        try {
+            $validated = $request->validate([
+                'rating' => 'required|integer|min:1|max:5',
+                'review' => 'nullable|string|max:1000',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('❌ VALIDATION FAILED', $e->errors());
+            return response()->json([
+                'error' => 'Validasi gagal',
+                'errors' => $e->errors(),
+            ], 422);
+        }
 
-        // Check if user already rated this UMKM
+        // Check if user already rated
         $existingRating = Rating::where('umkm_id', $umkm->id)
             ->where('user_id', $user->id)
             ->first();
 
         if ($existingRating) {
-            // Update existing rating
             $existingRating->update($validated);
+            Log::info('✅ RATING UPDATED', [
+                'rating_id' => $existingRating->id,
+                'user_id' => $user->id,
+                'umkm_id' => $umkm->id,
+                'new_rating' => $validated['rating'],
+            ]);
             return response()->json([
                 'message' => 'Rating berhasil diperbarui',
                 'rating' => $existingRating,
@@ -62,17 +126,37 @@ class RatingController extends Controller
         }
 
         // Create new rating
-        $rating = Rating::create([
-            'umkm_id' => $umkm->id,
-            'user_id' => $user->id,
-            'rating' => $validated['rating'],
-            'review' => $validated['review'] ?? null,
-        ]);
+        try {
+            $rating = Rating::create([
+                'umkm_id' => $umkm->id,
+                'user_id' => $user->id,
+                'rating' => $validated['rating'],
+                'review' => $validated['review'] ?? null,
+            ]);
 
-        return response()->json([
-            'message' => 'Rating berhasil ditambahkan',
-            'rating' => $rating->load('user'),
-        ], 201);
+            Log::info('✅ NEW RATING CREATED', [
+                'rating_id' => $rating->id,
+                'user_id' => $user->id,
+                'umkm_id' => $umkm->id,
+                'rating_value' => $validated['rating'],
+                'has_review' => !empty($validated['review']),
+            ]);
+
+            return response()->json([
+                'message' => 'Rating berhasil ditambahkan',
+                'rating' => $rating->load('user'),
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('❌ ERROR CREATING RATING', [
+                'error_message' => $e->getMessage(),
+                'error_line' => $e->getLine(),
+                'user_id' => $user->id,
+                'umkm_id' => $umkm->id,
+            ]);
+            return response()->json([
+                'error' => 'Gagal menyimpan rating: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -133,6 +217,26 @@ class RatingController extends Controller
         return response()->json([
             'message' => 'Terima kasih atas masukan Anda',
             'helpful_count' => $rating->helpful_count,
+        ]);
+    }
+
+    /**
+     * Get current user's ratings
+     */
+    public function userRatings(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['ratings' => [], 'message' => 'Unauthorized'], 401);
+        }
+
+        $ratings = Rating::where('user_id', Auth::id())
+            ->with('umkm:id,nama_umkm,kategori,gambar')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json([
+            'ratings' => $ratings,
+            'count' => $ratings->count(),
         ]);
     }
 }

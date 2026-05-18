@@ -4,6 +4,7 @@ import RatingSection from '@/Components/RatingSection.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, ref, onMounted } from 'vue';
 import axios from 'axios';
+import { useNotification } from '@/Composables/useNotification';
 
 interface User {
     id: number;
@@ -60,6 +61,14 @@ const props = defineProps<{
 // Get auth from Inertia shared data
 const page = usePage();
 const currentUser = computed(() => (props.auth?.user ?? page.props.auth?.user) as User | null);
+const loginUrl = computed(() => {
+    const redirectTarget = page.url || '/';
+    return `/login?redirect=${encodeURIComponent(redirectTarget)}`;
+});
+
+const redirectToLogin = () => {
+    window.location.href = loginUrl.value;
+};
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -161,6 +170,9 @@ const formatOperatingHours = (operatingHours: any) => {
 const showDetailModal = ref(false);
 const selectedMenuDetail = ref<UmkmMenu | null>(null);
 
+// Notification system
+const { success, error, warning } = useNotification();
+
 // Wishlist state
 const isWishlisted = ref(false);
 const wishlistCount = ref(0);
@@ -180,7 +192,7 @@ const closeDetailModal = () => {
 // Wishlist functions
 const toggleWishlist = async () => {
     if (!currentUser.value) {
-        window.location.href = '/login/user';
+        redirectToLogin();
         return;
     }
     
@@ -193,26 +205,28 @@ const toggleWishlist = async () => {
 
 const addToWishlist = async () => {
     if (!currentUser.value) {
-        window.location.href = '/login/user';
+        redirectToLogin();
         return;
     }
     
     try {
         console.log('Adding to wishlist, UMKM ID:', props.umkm.id);
-        const response = await axios.post(`/api/v1/umkms/${props.umkm.id}/wishlist`);
+        const response = await axios.post(`/wishlist/toggle/${props.umkm.id}`);
         
         console.log('Wishlist add response:', response.data);
         isWishlisted.value = true;
-        alert('✅ Berhasil ditambahkan ke wishlist!');
+        success('Berhasil ditambahkan ke wishlist!');
     } catch (error: any) {
         console.error('Error adding to wishlist:', error);
         if (error.response?.status === 401) {
-            alert('❌ Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = '/login/user';
+            error('Sesi Anda telah berakhir. Silakan login kembali.');
+            redirectToLogin();
+        } else if (error.response?.status === 403) {
+            error('Hanya pengguna biasa yang dapat menambahkan ke wishlist.');
         } else if (error.response?.data?.message) {
-            alert('❌ Error: ' + error.response.data.message);
+            error('Error: ' + error.response.data.message);
         } else {
-            alert('❌ Gagal menambahkan ke wishlist. Silakan coba lagi.');
+            error('Gagal menambahkan ke wishlist. Silakan coba lagi.');
         }
     }
 };
@@ -220,20 +234,20 @@ const addToWishlist = async () => {
 const removeFromWishlist = async () => {
     try {
         console.log('Removing from wishlist, UMKM ID:', props.umkm.id);
-        const response = await axios.delete(`/api/v1/umkms/${props.umkm.id}/wishlist`);
+        const response = await axios.delete(`/wishlist/${props.umkm.id}`);
         
         console.log('Wishlist remove response:', response.data);
         isWishlisted.value = false;
-        alert('✅ Berhasil dihapus dari wishlist!');
+        success('Berhasil dihapus dari wishlist!');
     } catch (error: any) {
         console.error('Error removing from wishlist:', error);
         if (error.response?.status === 401) {
-            alert('❌ Sesi Anda telah berakhir. Silakan login kembali.');
-            window.location.href = '/login/user';
+            error('Sesi Anda telah berakhir. Silakan login kembali.');
+            redirectToLogin();
         } else if (error.response?.data?.message) {
-            alert('❌ Error: ' + error.response.data.message);
+            error('Error: ' + error.response.data.message);
         } else {
-            alert('❌ Gagal menghapus dari wishlist. Silakan coba lagi.');
+            error('Gagal menghapus dari wishlist. Silakan coba lagi.');
         }
     }
 };
@@ -246,8 +260,7 @@ const checkWishlistStatus = async () => {
     
     try {
         console.log('Checking wishlist status for UMKM:', props.umkm.id);
-        // Call axios (dengan session-based auth)
-        const response = await axios.get(`/api/v1/umkms/${props.umkm.id}/wishlist/check`);
+        const response = await axios.get(`/wishlist/check/${props.umkm.id}`);
         
         isWishlisted.value = response.data.wishlisted || false;
         console.log('Wishlist status:', isWishlisted.value);
@@ -260,7 +273,7 @@ const checkWishlistStatus = async () => {
 
 const saveToWishlist = async () => {
     if (!currentUser.value) {
-        window.location.href = '/login/user';
+        redirectToLogin();
         return;
     }
     

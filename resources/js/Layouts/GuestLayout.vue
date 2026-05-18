@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import NotificationContainer from '@/Components/NotificationContainer.vue';
 
 // Check if current page is home page
 const isHomePage = computed(() => {
@@ -21,6 +22,9 @@ const isAuthPage = computed(() => {
 </script>
 
 <template>
+    <!-- Notification Container -->
+    <NotificationContainer />
+    
     <!-- Fullscreen layout for home page -->
     <div v-if="isHomePage" class="w-full h-full">
         <slot />

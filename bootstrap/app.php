@@ -12,13 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Add session middleware to API routes for Sanctum session-based auth
-        $middleware->api(append: [
-            \Illuminate\Session\Middleware\StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        ]);
-
+        // IMPORTANT: Do NOT add StartSession globally to API routes
+        // It will be added explicitly only to rating/wishlist routes
+        // that need session-based auth. Other API routes use Sanctum token auth.
+        
         // Prepend middleware to run BEFORE CSRF validation
         $middleware->web(prepend: [
             \App\Http\Middleware\EnsureCsrfTokenOnLogout::class,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, unref } from 'vue';
+import { ref, computed, onMounted, unref, watch } from 'vue';
 import axios from 'axios';
+import { useNotification } from '@/Composables/useNotification';
 
 interface User {
     id: number;
@@ -34,11 +35,22 @@ const props = defineProps<{
     currentUser?: { id: number; name: string; user_type?: string; user_type_old?: string } | null;
 }>();
 
+// Notification system
+const { success, error, warning } = useNotification();
+
 const ratings = ref<RatingData[]>([]);
 const stats = ref<RatingStats | null>(null);
 const isLoading = ref(false);
 const isSubmitting = ref(false);
 const resolvedUser = ref<User | null>(props.currentUser ?? null);
+const loginUrl = computed(() => {
+    if (typeof window === 'undefined') {
+        return '/login';
+    }
+
+    const redirectTarget = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    return `/login?redirect=${encodeURIComponent(redirectTarget)}`;
+});
 
 // Form state
 const userRating = ref(0);
@@ -90,11 +102,32 @@ const getRatingCount = (rating: number) => {
     return stats.value?.distribution[rating]?.count || 0;
 };
 
+const syncExistingRatingState = () => {
+    const current = resolvedUser.value;
+    if (!current) {
+        existingRating.value = null;
+        userRating.value = 0;
+        userReview.value = '';
+        return;
+    }
+
+    existingRating.value = ratings.value.find((r) => r.user.id === current.id) || null;
+    if (existingRating.value) {
+        userRating.value = existingRating.value.rating;
+        userReview.value = existingRating.value.review || '';
+        return;
+    }
+
+    userRating.value = 0;
+    userReview.value = '';
+};
+
 // Load ratings
 const loadRatings = async () => {
     isLoading.value = true;
     try {
-        const response = await axios.get(`/api/v1/umkms/${props.umkm.id}/ratings`);
+        const axiosInstance = (window as any).axios;
+        const response = await axiosInstance.get(`/ratings/${props.umkm.id}`);
         ratings.value = response.data.ratings;
         stats.value = {
             average_rating: response.data.average_rating,
@@ -102,15 +135,7 @@ const loadRatings = async () => {
             distribution: response.data.distribution,
         };
 
-        // Check if current user has already rated (support Ref/computed from parent)
-        const uc = resolvedUser.value;
-        if (uc) {
-            existingRating.value = ratings.value.find(r => r.user.id === uc.id) || null;
-            if (existingRating.value) {
-                userRating.value = existingRating.value.rating;
-                userReview.value = existingRating.value.review || '';
-            }
-        }
+        syncExistingRatingState();
     } catch (error) {
         console.error('Error loading ratings:', error);
     } finally {
@@ -123,77 +148,128 @@ const resolveAuthUser = async () => {
         return;
     }
 
-    try {
-        const response = await axios.get('/api/v1/auth/profile');
-        resolvedUser.value = response.data?.data ?? null;
-        console.log('Resolved auth user from API:', resolvedUser.value);
-    } catch (error: any) {
-        if (error.response?.status !== 401) {
-            console.error('Error resolving auth user:', error);
-        }
-        resolvedUser.value = null;
-    }
+    // Since currentUser is provided via Inertia props, we don't need to fetch separately
+    // If it's not available, user is not logged in
+    console.log('✅ Using currentUser from Inertia props');
+    resolvedUser.value = props.currentUser ?? null;
+    syncExistingRatingState();
 };
+
+watch(
+    () => props.currentUser,
+    (newUser) => {
+        resolvedUser.value = newUser ?? null;
+        syncExistingRatingState();
+    }
+);
 
 // Submit rating
 const submitRating = async () => {
     if (!canEditRating.value) {
-        alert('Anda harus login terlebih dahulu');
-        window.location.href = '/login/user';
+        warning('Anda harus login terlebih dahulu');
+        window.location.href = loginUrl.value;
         return;
     }
 
     if (userRating.value === 0) {
-        alert('Silakan pilih rating bintang');
+        warning('Silakan pilih rating bintang');
         return;
     }
 
     isSubmitting.value = true;
     try {
-        console.log('=== SUBMITTING RATING ===');
-        console.log('User:', unref((props as any).currentUser));
-        console.log('UMKM ID:', props.umkm.id);
-        console.log('Rating:', userRating.value);
-        console.log('Axios defaults:', {
-            withCredentials: window.axios.defaults.withCredentials,
-            baseURL: window.axios.defaults.baseURL,
+        // Pre-flight check: Verify session is still valid
+        console.log('🔍 Pre-flight: Checking session status...');
+        try {
+            const sessionCheck = await (window as any).axios.get('/debug/session');
+            console.log('✅ Session check:', {
+                session_id: sessionCheck.data.session_id,
+                auth_check: sessionCheck.data.auth_check_web,
+                user_id: sessionCheck.data.auth_user?.id,
+            });
+            
+            if (!sessionCheck.data.auth_check_web) {
+                console.warn('⚠️ Session exists but Auth::check() failed!');
+                throw new Error('Session not recognized by auth');
+            }
+        } catch (sessionError: any) {
+            console.error('❌ Session check failed:', sessionError.message);
+            // Continue anyway, but log it
+        }
+
+        console.log('📤 === SUBMITTING RATING ===');
+        console.log('👤 User:', unref((props as any).currentUser));
+        console.log('🏪 UMKM ID:', props.umkm.id);
+        console.log('⭐ Rating:', userRating.value);
+        console.log('📝 Review:', userReview.value?.substring(0, 50) || 'none');
+        
+        // Use window.axios explicitly to ensure credentials
+        const axiosInstance = (window as any).axios;
+        console.log('🔗 Axios config:', {
+            withCredentials: axiosInstance.defaults.withCredentials,
             headers: {
-                'X-Requested-With': window.axios.defaults.headers.common['X-Requested-With'],
-                'X-CSRF-TOKEN': typeof window.axios.defaults.headers.common['X-CSRF-TOKEN'] === 'string' ? 'PRESENT' : 'MISSING'
+                'X-Requested-With': axiosInstance.defaults.headers.common['X-Requested-With'],
+                'X-CSRF-TOKEN': axiosInstance.defaults.headers.common['X-CSRF-TOKEN'] ? '✅ SET' : '❌ MISSING',
             }
         });
 
-        const response = await axios.post(`/api/v1/umkms/${props.umkm.id}/ratings`, {
+        const payload = {
             rating: userRating.value,
             review: userReview.value || null,
-        });
+        };
+        console.log('📦 Request payload:', payload);
+
+        const url = `/ratings/submit/${props.umkm.id}`;
+        console.log('🌐 Request URL:', url);
+
+        const response = await axiosInstance.post(url, payload);
 
         console.log('✅ Rating submitted successfully:', response.data);
+        console.log('📊 Response status:', response.status);
 
         // Reload ratings after successful submission
         await loadRatings();
         userRating.value = 0;
         userReview.value = '';
-        alert('✅ Rating berhasil disimpan!');
+        success('Rating berhasil disimpan!');
     } catch (error: any) {
-        console.error('❌ Error submitting rating:', error);
+        console.error('❌ ===== ERROR SUBMITTING RATING =====');
+        console.error('Error object:', error);
         console.error('Response status:', error.response?.status);
         console.error('Response data:', error.response?.data);
         console.error('Request URL:', error.config?.url);
+        console.error('Request method:', error.config?.method);
         console.error('Request headers:', error.config?.headers);
+        console.error('Request body:', error.config?.data);
         
         // Detailed error handling
         if (error.response?.status === 401) {
-            alert('❌ Sesi Anda telah berakhir (401). Silakan login kembali.');
-            window.location.href = '/login/user';
+            console.error('🔐 Authentication failed: Session expired or not recognized');
+            error('Sesi Anda telah berakhir. Silakan login kembali.');
+            window.location.href = loginUrl.value;
         } else if (error.response?.status === 403) {
-            alert('❌ Anda tidak memiliki izin untuk memberikan rating. Hanya pengguna biasa yang dapat memberikan rating.');
+            console.error('🚫 Permission denied: User is UMKM owner');
+            error('Hanya pengguna biasa yang dapat memberikan rating.');
+        } else if (error.response?.status === 422) {
+            console.error('❌ Validation error:', error.response.data);
+            const errors = error.response.data?.errors;
+            if (errors) {
+                const errorMessages = Object.entries(errors)
+                    .map(([field, messages]: any) => `${field}: ${messages.join(', ')}`)
+                    .join('; ');
+                error('Validasi gagal: ' + errorMessages);
+            } else {
+                error('Validasi gagal: ' + error.response.data?.message);
+            }
         } else if (error.response?.data?.message) {
-            alert('❌ Error: ' + error.response.data.message);
+            console.error('❌ Server error:', error.response.data.message);
+            error('Error: ' + error.response.data.message);
         } else if (error.message) {
-            alert('❌ Error: ' + error.message);
+            console.error('❌ Network error:', error.message);
+            error('Error: ' + error.message);
         } else {
-            alert('❌ Gagal menyimpan rating. Silakan coba lagi.');
+            console.error('❌ Unknown error');
+            error('Gagal menyimpan rating. Silakan coba lagi.');
         }
     } finally {
         isSubmitting.value = false;
@@ -214,18 +290,19 @@ const deleteRating = async (ratingId: number) => {
     if (!confirm('Apakah Anda yakin ingin menghapus rating ini?')) return;
 
     try {
-        // Sanctum akan otomatis attach session cookie
-        await axios.delete(`/api/v1/ratings/${ratingId}`);
+        const axiosInstance = (window as any).axios;
+        console.log('🗑️ Deleting rating:', ratingId);
+        await axiosInstance.delete(`/ratings/${ratingId}`);
         await loadRatings();
         userRating.value = 0;
         userReview.value = '';
-        alert('Rating berhasil dihapus');
+        success('Rating berhasil dihapus');
     } catch (error: any) {
         console.error('Error deleting rating:', error);
         if (error.response?.status === 401) {
-            alert('Anda harus login untuk menghapus rating');
+            error('Anda harus login untuk menghapus rating');
         } else {
-            alert('Gagal menghapus rating');
+            error('Gagal menghapus rating');
         }
     }
 };
@@ -233,8 +310,9 @@ const deleteRating = async (ratingId: number) => {
 // Mark helpful
 const markHelpful = async (ratingId: number) => {
     try {
-        // Sanctum akan otomatis attach session cookie
-        await axios.post(`/api/v1/ratings/${ratingId}/helpful`, {});
+        const axiosInstance = (window as any).axios;
+        console.log('👍 Marking rating as helpful:', ratingId);
+        await axiosInstance.post(`/ratings/${ratingId}/helpful`, {});
         await loadRatings();
     } catch (error) {
         console.error('Error marking rating as helpful:', error);
@@ -362,7 +440,7 @@ const getStarClass = (index: number, ratingValue: number) => {
             <div v-else-if="!isLoggedIn" class="mb-8 pb-8 border-b border-gray-100">
                 <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-4 sm:p-6 rounded-lg border border-amber-200 text-center">
                     <p class="text-gray-900 font-medium mb-3">Masuk untuk memberikan rating dan ulasan</p>
-                    <a href="/login/user" class="inline-block px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all">
+                    <a :href="loginUrl" class="inline-block px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all">
                         🔐 Masuk sebagai Pengguna
                     </a>
                 </div>

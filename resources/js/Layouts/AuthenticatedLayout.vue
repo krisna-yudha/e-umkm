@@ -4,6 +4,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
+import NotificationContainer from '@/Components/NotificationContainer.vue';
 import { Link, usePage, router, useForm } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -31,6 +32,9 @@ const handleLogout = () => {
 
 <template>
     <div>
+        <!-- Notification Container -->
+        <NotificationContainer />
+        
         <div class="min-h-screen bg-gray-100">
             <nav
                 class="border-b border-gray-100 bg-white"

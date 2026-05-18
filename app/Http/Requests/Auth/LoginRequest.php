@@ -35,6 +35,7 @@ class LoginRequest extends FormRequest
 
     /**
      * Attempt to authenticate the request's credentials.
+     * Validate that user_type matches the tab selected at login.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -42,11 +43,38 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
+        // First attempt basic auth with email & password
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
+            ]);
+        }
+
+        // Now validate user_type matches the selected tab
+        $user = Auth::user();
+        $selectedUserType = $this->input('user_type', 'user'); // Default to 'user' if not provided
+        $actualUserType = $user->user_type ?? 'user'; // Default to 'user' if null
+
+        // Ensure the user's actual type matches what they selected
+        // 'user' tab should only allow user_type='user' or null (old users)
+        // 'umkm' tab should only allow user_type='umkm'
+        if ($selectedUserType === 'umkm' && $actualUserType !== 'umkm') {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun ini bukan akun UMKM. Silakan login dari tab Pengguna.',
+            ]);
+        }
+
+        if ($selectedUserType === 'user' && $actualUserType === 'umkm') {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Akun ini adalah akun UMKM. Silakan login dari tab UMKM.',
             ]);
         }
 

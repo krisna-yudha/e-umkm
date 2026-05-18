@@ -57,11 +57,7 @@ onMounted(() => {
 
 const fetchUserRatings = async () => {
     try {
-        const response = await fetch('/api/v1/user/ratings', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('sanctum_token')}`
-            }
-        });
+        const response = await fetch('/user/ratings');
         if (response.ok) {
             const data = await response.json();
             ratings.value = data.ratings || [];
@@ -75,14 +71,10 @@ const fetchUserRatings = async () => {
 
 const fetchUserWishlist = async () => {
     try {
-        const response = await fetch('/api/v1/user/wishlist', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('sanctum_token')}`
-            }
-        });
+        const response = await fetch('/user/wishlist');
         if (response.ok) {
             const data = await response.json();
-            wishlist.value = data.wishlist || [];
+            wishlist.value = data.wishlists || [];
         }
     } catch (error) {
         console.error('Error fetching wishlist:', error);

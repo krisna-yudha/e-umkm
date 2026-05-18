@@ -7,6 +7,8 @@ use App\Http\Controllers\UmkmMenuController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\RatingController;
+use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\CheckUmkmType;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -94,6 +96,25 @@ Route::middleware('auth')->group(function () {
             'menu' => 'menu'
         ]);
     });
+});
+
+// Public route for getting ratings (no auth required - anyone can view)
+Route::get('/ratings/{umkm:id}', [RatingController::class, 'index'])->name('ratings.index');
+
+// Session-based Rating & Wishlist routes (Web routes, not API)
+// These need to be in web.php to properly maintain session authentication
+Route::middleware(['auth'])->group(function () {    // User personal ratings & wishlist
+    Route::get('/user/ratings', [RatingController::class, 'userRatings'])->name('user.ratings');
+    Route::get('/user/wishlist', [WishlistController::class, 'index'])->name('user.wishlist');
+        // Rating routes - POST/DELETE require auth
+    Route::post('/ratings/submit/{umkm}', [RatingController::class, 'store'])->name('ratings.store');
+    Route::delete('/ratings/{rating}', [RatingController::class, 'destroy'])->name('ratings.destroy');
+    Route::post('/ratings/{rating}/helpful', [RatingController::class, 'markHelpful'])->name('ratings.helpful');
+    
+    // Wishlist routes
+    Route::post('/wishlist/toggle/{umkm}', [WishlistController::class, 'store'])->name('wishlist.store');
+    Route::delete('/wishlist/{umkm}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
+    Route::get('/wishlist/check/{umkm}', [WishlistController::class, 'check'])->name('wishlist.check');
 });
 
 require __DIR__.'/auth.php';

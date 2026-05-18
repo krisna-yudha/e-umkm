@@ -8,9 +8,10 @@ import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted } from 'vue';
 
-defineProps<{
+const props = defineProps<{
     canResetPassword?: boolean;
     status?: string;
+    redirect?: string | null;
 }>();
 
 const userType = ref<'user' | 'umkm'>('user');
@@ -22,6 +23,7 @@ const form = useForm({
     password: '',
     user_type: 'user',
     remember: false,
+    redirect: props.redirect ?? '',
 });
 
 // Check for message in URL parameters
