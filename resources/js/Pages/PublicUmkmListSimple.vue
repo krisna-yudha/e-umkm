@@ -184,7 +184,7 @@ const isSearching = computed(() => {
                             </Link>
 
                             <!-- Login Button untuk User Biasa (Jika belum login) -->
-                            <Link 
+                            <!-- <Link 
                                 v-if="!currentUser"
                                 href="/login" 
                                 class="hidden sm:flex group relative overflow-hidden bg-purple-500 bg-opacity-20 backdrop-blur-md border border-purple-400 border-opacity-30 rounded-2xl p-4 hover:bg-opacity-30 transition-all duration-300 shadow-xl"
@@ -197,10 +197,10 @@ const isSearching = computed(() => {
                                     </div>
                                     <span class="text-white font-semibold">Login Guest</span>
                                 </div>
-                            </Link>
+                            </Link> -->
 
                             <!-- Dashboard Button (Jika sudah login) -->
-                            <Link 
+                            <!-- <Link 
                                 v-if="currentUser"
                                 href="/dashboard" 
                                 class="hidden sm:flex group relative overflow-hidden bg-green-500 bg-opacity-20 backdrop-blur-md border border-green-400 border-opacity-30 rounded-2xl p-4 hover:bg-opacity-30 transition-all duration-300 shadow-xl"
@@ -213,7 +213,7 @@ const isSearching = computed(() => {
                                     </div>
                                     <span class="text-white font-semibold">Logged In</span>
                                 </div>
-                            </Link>
+                            </Link> -->
 
                             <!-- Mobile compact buttons -->
                             <div class="sm:hidden flex gap-3 justify-center w-full">

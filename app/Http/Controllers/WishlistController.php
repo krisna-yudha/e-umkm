@@ -16,8 +16,8 @@ class WishlistController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || $user->user_type !== 'user') {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $wishlists = Wishlist::where('user_id', $user->id)
@@ -38,8 +38,13 @@ class WishlistController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user || $user->user_type !== 'user') {
-            return response()->json(['error' => 'Hanya pengguna biasa yang dapat menambahkan ke wishlist'], 403);
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if user is trying to wishlist their own UMKM
+        if ($umkm->isOwnedBy($user->id)) {
+            return response()->json(['error' => 'Anda tidak dapat menambahkan UMKM Anda sendiri ke wishlist'], 403);
         }
 
         // Check if already in wishlist

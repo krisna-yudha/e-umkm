@@ -46,6 +46,13 @@
 - ✅ **Status Ketersediaan** - Real-time availability tracking
 - ✅ **Kategori Produk** - Organisasi menu yang terstruktur
 
+#### ⭐ **Rating & Wishlisting**
+- ✅ **User & UMKM Rating** - Sistem rating 1-5 bintang dengan review
+- ✅ **Wishlist Management** - Menyimpan UMKM favorit
+- ✅ **Cross-UMKM Collaboration** - UMKM dapat saling memberi rating
+- ✅ **Rating Statistics** - Distribusi rating dan average rating per UMKM
+- ✅ **Review System** - Ulasan tertulis dengan helpful counter
+
 #### 🗺️ **Pemetaan & Lokasi**
 - ✅ **Interactive Maps** - Integrasi Leaflet untuk pemetaan
 - ✅ **Geolocation** - Pencarian berdasarkan koordinat
@@ -179,12 +186,14 @@ Authorization: Bearer {your-token}
 
 ### Endpoints Overview
 
-| Category | Endpoints         | Description                       |
-|----------|-------------------|-----------------------------------|
-| **Auth** | `/v1/auth/*`      | Authentication & user management  |
-| **UMKM** | `/v1/umkm/*`      | UMKM CRUD operations & search     |
-| **Menu** | `/v1/menus/*`     | Menu/product management           |
-| **Utils**| `/health`, `/user`| Utility endpoints                 |
+| Category | Endpoints                  | Description                       |
+|----------|----------------------------|-----------------------------------|
+| **Auth** | `/v1/auth/*`               | Authentication & user management  |
+| **UMKM** | `/v1/umkm/*`               | UMKM CRUD operations & search     |
+| **Menu** | `/v1/menus/*`              | Menu/product management           |
+| **Rating** | `/v1/umkms/{id}/ratings/*` | Rating & review system            |
+| **Wishlist** | `/v1/umkms/{id}/wishlist/*` | Wishlist management               |
+| **Utils**| `/health`, `/user`         | Utility endpoints                 |
 
 #### Quick API Test
 ```bash
@@ -199,6 +208,49 @@ curl -X POST "http://127.0.0.1:8000/api/v1/auth/register" \
   -H "Content-Type: application/json" \
   -d '{"name":"Test User","email":"test@example.com","password":"password123","password_confirmation":"password123"}'
 ```
+
+#### Rating & Wishlist Endpoints
+
+**Get Ratings for UMKM**
+```bash
+GET /api/v1/umkms/{umkm_id}/ratings
+```
+
+**Submit Rating (Requires Auth)**
+```bash
+POST /api/v1/umkms/{umkm_id}/ratings
+Body: {
+  "rating": 5,
+  "review": "Produk berkualitas bagus!"
+}
+```
+
+**Delete Rating (Requires Auth)**
+```bash
+DELETE /api/v1/ratings/{rating_id}
+```
+
+**Check Wishlist Status**
+```bash
+GET /api/v1/umkms/{umkm_id}/wishlist/check
+```
+
+**Add to Wishlist (Requires Auth)**
+```bash
+POST /api/v1/umkms/{umkm_id}/wishlist
+```
+
+**Remove from Wishlist (Requires Auth)**
+```bash
+DELETE /api/v1/umkms/{umkm_id}/wishlist
+```
+
+**Get User's Wishlist (Requires Auth)**
+```bash
+GET /api/v1/wishlist
+```
+
+> **Note**: UMKM users dapat memberi rating dan wishlist ke UMKM lain, tetapi tidak dapat memberikan rating untuk UMKM mereka sendiri.
 
 #### Postman Collection
 Import file `E-UMKM-API.postman_collection.json` untuk testing lengkap.
@@ -296,7 +348,11 @@ php artisan serve
 
 ### Relationships
 - User `hasMany` Umkm
+- User `hasMany` Rating
+- User `hasMany` Wishlist
 - Umkm `hasMany` UmkmMenu
+- Umkm `hasMany` Rating
+- Umkm `hasMany` Wishlist
 - User `hasMany` PersonalAccessToken
 
 ---

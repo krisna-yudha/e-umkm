@@ -248,8 +248,8 @@ const submitRating = async () => {
             error('Sesi Anda telah berakhir. Silakan login kembali.');
             window.location.href = loginUrl.value;
         } else if (error.response?.status === 403) {
-            console.error('🚫 Permission denied: User is UMKM owner');
-            error('Hanya pengguna biasa yang dapat memberikan rating.');
+            console.error('🚫 Permission denied:', error.response.data?.error);
+            error(error.response.data?.error || 'Anda tidak memiliki izin untuk memberikan rating.');
         } else if (error.response?.status === 422) {
             console.error('❌ Validation error:', error.response.data);
             const errors = error.response.data?.errors;
@@ -259,11 +259,14 @@ const submitRating = async () => {
                     .join('; ');
                 error('Validasi gagal: ' + errorMessages);
             } else {
-                error('Validasi gagal: ' + error.response.data?.message);
+                error('Validasi gagal: ' + (error.response.data?.message || error.response.data?.error));
             }
         } else if (error.response?.data?.message) {
             console.error('❌ Server error:', error.response.data.message);
             error('Error: ' + error.response.data.message);
+        } else if (error.response?.data?.error) {
+            console.error('❌ Server error:', error.response.data.error);
+            error('Error: ' + error.response.data.error);
         } else if (error.message) {
             console.error('❌ Network error:', error.message);
             error('Error: ' + error.message);

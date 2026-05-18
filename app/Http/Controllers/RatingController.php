@@ -7,6 +7,7 @@ use App\Models\Umkm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class RatingController extends Controller
 {
@@ -16,9 +17,9 @@ class RatingController extends Controller
     public function store(Request $request, Umkm $umkm)
     {
         // Comprehensive debug logging
-        $sessionUserType = session('user_type', 'user');
-        $sessionUserId = session('user_id');
-        $sessionData = session()->all();
+        $sessionUserType = Session::get('user_type', 'user');
+        $sessionUserId = Session::get('user_id');
+        $sessionData = Session::all();
         $authCheck = Auth::check();
         $authUser = Auth::user();
         
@@ -39,8 +40,8 @@ class RatingController extends Controller
         ]);
 
         Log::info('SESSION STATUS', [
-            'session_id' => session()->getId(),
-            'session_exists' => session()->has('user_id'),
+            'session_id' => Session::getId(),
+            'session_exists' => Session::has('user_id'),
             'session_user_id' => $sessionUserId,
             'session_user_type' => $sessionUserType,
             'session_all_keys' => array_keys($sessionData),
@@ -55,16 +56,16 @@ class RatingController extends Controller
         // Check authentication
         if (!$authCheck) {
             Log::error('❌ AUTHENTICATION FAILED - Auth::check() returned false', [
-                'session_id' => session()->getId(),
-                'session_has_user_id' => session()->has('user_id'),
+                'session_id' => Session::getId(),
+                'session_has_user_id' => Session::has('user_id'),
             ]);
             
             return response()->json([
                 'error' => 'Sesi Anda telah berakhir. Silakan login terlebih dahulu',
                 'debug' => [
                     'auth_check' => false,
-                    'session_id' => session()->getId(),
-                    'session_has_user' => session()->has('user_id'),
+                    'session_id' => Session::getId(),
+                    'session_has_user' => Session::has('user_id'),
                 ]
             ], 401);
         }
@@ -80,15 +81,15 @@ class RatingController extends Controller
             'user_type' => $userType,
         ]);
         
-        // Check if UMKM owner
-        if ($userType === 'umkm') {
-            Log::warning('❌ UMKM OWNER TRIED TO RATE', [
+        // Check if user is trying to rate their own UMKM
+        if ($umkm->isOwnedBy($user->id)) {
+            Log::warning('❌ UMKM OWNER TRIED TO RATE OWN UMKM', [
                 'user_id' => $user->id,
                 'user_name' => $user->name,
                 'umkm_id' => $umkm->id,
             ]);
             return response()->json([
-                'error' => 'UMKM owner tidak dapat memberikan rating'
+                'error' => 'Anda tidak dapat memberikan rating untuk UMKM Anda sendiri'
             ], 403);
         }
 

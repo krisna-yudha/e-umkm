@@ -222,9 +222,11 @@ const addToWishlist = async () => {
             error('Sesi Anda telah berakhir. Silakan login kembali.');
             redirectToLogin();
         } else if (error.response?.status === 403) {
-            error('Hanya pengguna biasa yang dapat menambahkan ke wishlist.');
+            error(error.response.data?.error || 'Gagal menambahkan ke wishlist.');
         } else if (error.response?.data?.message) {
             error('Error: ' + error.response.data.message);
+        } else if (error.response?.data?.error) {
+            error('Error: ' + error.response.data.error);
         } else {
             error('Gagal menambahkan ke wishlist. Silakan coba lagi.');
         }
