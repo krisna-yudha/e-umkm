@@ -157,16 +157,16 @@ class ImageCompressionController extends Controller
         try {
             switch ($mimeType) {
                 case 'image/jpeg':
-                    return imagecreatefromjpeg($filePath);
+                    return \imagecreatefromjpeg($filePath);
                 case 'image/png':
-                    $img = imagecreatefrompng($filePath);
-                    imagealphablending($img, false);
-                    imagesavealpha($img, true);
+                    $img = \imagecreatefrompng($filePath);
+                    \imagealphablending($img, false);
+                    \imagesavealpha($img, true);
                     return $img;
                 case 'image/gif':
-                    return imagecreatefromgif($filePath);
+                    return \imagecreatefromgif($filePath);
                 case 'image/webp':
-                    return imagecreatefromwebp($filePath);
+                    return \imagecreatefromwebp($filePath);
                 default:
                     return null;
             }

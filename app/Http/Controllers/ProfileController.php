@@ -38,7 +38,7 @@ class ProfileController extends Controller
 
         $user = $request->user();
         
-        // Handle profile photo upload
+        // Handle profile photo upload or deletion
         if ($request->hasFile('profile_photo')) {
             // Delete old photo if exists
             if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
@@ -48,6 +48,12 @@ class ProfileController extends Controller
             // Store new photo
             $photoPath = $request->file('profile_photo')->store('profile-photos', 'public');
             $validated['profile_photo'] = $photoPath;
+        } elseif ($request->has('profile_photo') && $request->input('profile_photo') === null) {
+            // Handle photo deletion when profile_photo is explicitly set to null
+            if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+                Storage::disk('public')->delete($user->profile_photo);
+            }
+            $validated['profile_photo'] = null;
         }
 
         $user->fill($validated);
