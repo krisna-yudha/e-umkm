@@ -9,6 +9,14 @@ use Tinify\Tinify;
 class ImageCompressionController extends Controller
 {
     /**
+     * Check if GD extension is enabled
+     */
+    private function isGdEnabled(): bool
+    {
+        return extension_loaded('gd') && function_exists('imagecreatefromjpeg');
+    }
+
+    /**
      * Compress image using TinyIMG API
      */
     public function compressImage(Request $request)
@@ -33,8 +41,8 @@ class ImageCompressionController extends Controller
             $imageData = file_get_contents($image->getRealPath());
             $originalSize = strlen($imageData);
 
-            // If file > 2MB, do pre-compression via fallback first
-            if ($originalSize > 2097152) { // 2MB in bytes
+            // If file > 2MB, do pre-compression via fallback first (only if GD available)
+            if ($originalSize > 2097152 && $this->isGdEnabled()) { // 2MB in bytes
                 Log::info('Large image detected, pre-compressing before TinyIMG', [
                     'original_size' => $originalSize
                 ]);
@@ -102,6 +110,12 @@ class ImageCompressionController extends Controller
     private function preCompressImage($imageFile)
     {
         try {
+            // Check if GD is available
+            if (!$this->isGdEnabled()) {
+                Log::info('GD extension not available, skipping pre-compression');
+                return ['success' => false];
+            }
+
             $imagePath = $imageFile->getRealPath();
             $mimeType = $imageFile->getMimeType();
 
@@ -155,6 +169,12 @@ class ImageCompressionController extends Controller
     private function createImageFromFile($filePath, $mimeType)
     {
         try {
+            // Check if GD is available before attempting to use image functions
+            if (!$this->isGdEnabled()) {
+                Log::warning('GD extension not available for image operations');
+                return null;
+            }
+
             switch ($mimeType) {
                 case 'image/jpeg':
                     return \imagecreatefromjpeg($filePath);
@@ -178,11 +198,36 @@ class ImageCompressionController extends Controller
 
     /**
      * Fallback compression if API key not available
-     * Uses simple JPEG conversion for basic compression
+     * Uses simple JPEG conversion for basic compression (requires GD)
      */
     private function fallbackCompress($imageFile, $originalSize = null)
     {
         try {
+            // If GD not available, convert to base64 without compression
+            if (!$this->isGdEnabled()) {
+                Log::info('GD extension not available, returning image as-is');
+                
+                $imagePath = $imageFile->getRealPath();
+                $mimeType = $imageFile->getMimeType();
+                $imageData = file_get_contents($imagePath);
+                
+                if ($originalSize === null) {
+                    $originalSize = strlen($imageData);
+                }
+                
+                // Determine MIME type for data URI
+                $dataMimeType = $mimeType ?: 'image/jpeg';
+                $base64Image = 'data:' . $dataMimeType . ';base64,' . base64_encode($imageData);
+
+                return response()->json([
+                    'success' => true,
+                    'compressedImage' => $base64Image,
+                    'originalSize' => $originalSize,
+                    'compressedSize' => strlen($imageData),
+                    'message' => 'Gambar berhasil diproses (tanpa kompresi - GD tidak tersedia)'
+                ]);
+            }
+
             $imagePath = $imageFile->getRealPath();
             $mimeType = $imageFile->getMimeType();
 
