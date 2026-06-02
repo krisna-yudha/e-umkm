@@ -7,6 +7,7 @@ use App\Http\Controllers\UmkmMenuController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\ImageCompressionController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Middleware\CheckUmkmType;
@@ -53,6 +54,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Image Compression endpoint - accessible at /api/compress-image
+    Route::prefix('api')->group(function () {
+        Route::post('/compress-image', [ImageCompressionController::class, 'compressImage'])->name('api.compress-image');
+    });
     
     // User Profile Route - Only for UMKM users
     Route::get('/user-profile', [UserProfileController::class, 'show'])

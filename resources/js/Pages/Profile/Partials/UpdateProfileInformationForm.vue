@@ -3,6 +3,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import SimpleImageCompressor from '@/Components/SimpleImageCompressor.vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -14,6 +15,8 @@ defineProps<{
 const user = usePage().props.auth.user;
 const photoInput = ref<HTMLInputElement | null>(null);
 const photoPreview = ref<string | null>(null);
+const showImageCompressor = ref(false);
+const tempImageFile = ref<File | null>(null);
 
 const form = useForm({
     name: user.name,
@@ -29,13 +32,21 @@ const updatePhotoPreview = () => {
     const file = photoInput.value?.files?.[0];
     if (!file) return;
 
-    form.profile_photo = file;
+    tempImageFile.value = file;
+    showImageCompressor.value = true;
+};
+
+const handleCompressedImage = (compressedFile: File) => {
+    form.profile_photo = compressedFile;
     
     const reader = new FileReader();
     reader.onload = (e) => {
         photoPreview.value = e.target?.result as string;
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(compressedFile);
+    
+    showImageCompressor.value = false;
+    tempImageFile.value = null;
 };
 
 const deletePhoto = () => {
@@ -112,8 +123,8 @@ const getProfilePhotoUrl = () => {
                     
                     <InputError class="mt-2" :message="form.errors.profile_photo" />
                     
-                    <p class="mt-2 text-sm text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-200">
-                        💡 <strong>Tips:</strong> Gunakan foto dengan resolusi tinggi (JPG, PNG, atau GIF, maksimal 2MB) untuk hasil terbaik
+                    <p class="mt-2 text-sm text-gray-500 bg-blue-50 rounded-lg p-3 border border-blue-200">
+                        💡 <strong>Tips:</strong> Foto akan otomatis dikompres dengan TinyIMG untuk hasil terbaik (JPG, PNG, atau GIF, maksimal 2MB)
                     </p>
                 </div>
             </div>
@@ -214,5 +225,15 @@ const getProfilePhotoUrl = () => {
                 </Transition>
             </div>
         </form>
+
+        <!-- Image Compressor Modal -->
+        <SimpleImageCompressor
+            :show="showImageCompressor"
+            :imageFile="tempImageFile"
+            @cropped="handleCompressedImage"
+            @close="showImageCompressor = false"
+            @success="null"
+            @error="null"
+        />
     </section>
 </template>
