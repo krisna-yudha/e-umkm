@@ -126,6 +126,18 @@ const goToPage = (url: string | null) => {
 const isSearching = computed(() => {
     return searchQuery.value.trim() !== '';
 });
+
+const paginationLinks = computed(() => {
+    return props.umkms.links.filter((link) => {
+        const label = link.label.replace(/<[^>]*>/g, '').trim();
+
+        if (!label) {
+            return false;
+        }
+
+        return /^\d+$/.test(label) || label === '...';
+    });
+});
 </script>
 
 <template>
@@ -531,39 +543,39 @@ const isSearching = computed(() => {
                 <!-- Pagination Component -->
                 <div v-if="!isSearching && umkms.total > umkms.per_page" class="mt-8 sm:mt-12">
                     <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 shadow-xl p-4 sm:p-6">
-                        <div class="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <!-- Pagination Info -->
-                            <div class="text-white text-opacity-80 text-xs sm:text-sm">
+                            <div class="text-center sm:text-left text-white text-opacity-80 text-xs sm:text-sm">
                                 Menampilkan {{ umkms.from }}-{{ umkms.to }} dari {{ umkms.total }} UMKM
                             </div>
                             
                             <!-- Pagination Links -->
-                            <div class="flex items-center space-x-1 sm:space-x-2">
+                            <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2">
                                 <!-- Previous Button -->
                                 <button
                                     @click="goToPage(umkms.prev_page_url)"
                                     :disabled="!umkms.prev_page_url"
                                     :class="[
-                                        'px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200',
+                                        'inline-flex items-center px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap',
                                         umkms.prev_page_url
                                             ? 'bg-white bg-opacity-20 text-white hover:bg-opacity-30 border border-white border-opacity-30'
                                             : 'bg-gray-500 bg-opacity-20 text-gray-400 cursor-not-allowed border border-gray-500 border-opacity-30'
                                     ]"
                                 >
-                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                                     </svg>
                                     <span class="hidden sm:inline">Sebelumnya</span>
                                 </button>
                                 
                                 <!-- Page Numbers -->
-                                <div class="hidden sm:flex items-center space-x-1">
-                                    <template v-for="(link, index) in umkms.links" :key="index">
+                                <div class="hidden sm:flex flex-wrap items-center justify-center gap-1 max-w-full">
+                                    <template v-for="(link, index) in paginationLinks" :key="index">
                                         <button
-                                            v-if="link.label !== 'Previous' && link.label !== 'Next' && link.url"
+                                            v-if="link.url && /^\d+$/.test(link.label.replace(/<[^>]*>/g, '').trim())"
                                             @click="goToPage(link.url)"
                                             :class="[
-                                                'min-w-[40px] h-10 rounded-lg text-sm font-medium transition-all duration-200',
+                                                'min-w-[40px] h-10 px-3 rounded-lg text-sm font-medium transition-all duration-200',
                                                 link.active
                                                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
                                                     : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30 border border-white border-opacity-30'
@@ -571,15 +583,15 @@ const isSearching = computed(() => {
                                             v-html="link.label"
                                         />
                                         <span
-                                            v-else-if="link.label !== 'Previous' && link.label !== 'Next' && !link.url"
-                                            class="min-w-[40px] h-10 flex items-center justify-center text-white text-opacity-60 text-sm"
+                                            v-else-if="link.label.replace(/<[^>]*>/g, '').trim() === '...'"
+                                            class="min-w-[40px] h-10 px-3 flex items-center justify-center text-white text-opacity-60 text-sm"
                                             v-html="link.label"
                                         />
                                     </template>
                                 </div>
                                 
                                 <!-- Mobile Page Info -->
-                                <div class="sm:hidden bg-white bg-opacity-20 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs border border-white border-opacity-30">
+                                <div class="sm:hidden bg-white bg-opacity-20 text-white px-3 py-1.5 rounded-lg text-xs border border-white border-opacity-30 whitespace-nowrap">
                                     {{ umkms.current_page }} / {{ umkms.last_page }}
                                 </div>
                                 
@@ -588,14 +600,14 @@ const isSearching = computed(() => {
                                     @click="goToPage(umkms.next_page_url)"
                                     :disabled="!umkms.next_page_url"
                                     :class="[
-                                        'px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200',
+                                        'inline-flex items-center px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap',
                                         umkms.next_page_url
                                             ? 'bg-white bg-opacity-20 text-white hover:bg-opacity-30 border border-white border-opacity-30'
                                             : 'bg-gray-500 bg-opacity-20 text-gray-400 cursor-not-allowed border border-gray-500 border-opacity-30'
                                     ]"
                                 >
                                     <span class="hidden sm:inline">Selanjutnya</span>
-                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 ml-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                     </svg>
                                 </button>

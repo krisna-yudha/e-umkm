@@ -28,7 +28,13 @@ const isDragOver = ref(false);
 const handleFileUpload = (event: Event) => {
     const target = event.target as HTMLInputElement;
     if (target.files && target.files[0]) {
-        form.gambar_menu = target.files[0];
+        const file = target.files[0];
+
+        if (!file.type.startsWith('image/')) {
+            return;
+        }
+
+        form.gambar_menu = file;
     }
 };
 
@@ -47,7 +53,6 @@ const handleDrop = (event: DragEvent) => {
     
     if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
         const file = event.dataTransfer.files[0];
-        // Check if it's an image file
         if (file.type.startsWith('image/')) {
             form.gambar_menu = file;
         }
@@ -254,5 +259,6 @@ const submit = () => {
                 </div>
             </div>
         </div>
+
     </AuthenticatedLayout>
 </template>

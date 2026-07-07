@@ -2,7 +2,7 @@
     <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Crop & Kompres Gambar</h3>
+                <h3 class="text-lg font-semibold text-gray-900">Crop Gambar</h3>
                 <button 
                     @click="closeModal" 
                     class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
@@ -16,13 +16,7 @@
             <div class="mb-4">
                 <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
                     <span>Ukuran asli: {{ originalSize }}</span>
-                    <span>Target maksimal: 2MB</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                        class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                        :style="{ width: compressionProgress + '%' }"
-                    ></div>
+                    <span>Hasil: crop tanpa resize</span>
                 </div>
             </div>
 
@@ -61,18 +55,6 @@
                     </select>
                 </div>
 
-                <div class="flex items-center space-x-2">
-                    <label class="text-sm font-medium text-gray-700">Kualitas:</label>
-                    <input 
-                        v-model="quality" 
-                        type="range" 
-                        min="0.1" 
-                        max="1" 
-                        step="0.1"
-                        class="w-20"
-                    >
-                    <span class="text-sm text-gray-600">{{ Math.round(quality * 100) }}%</span>
-                </div>
             </div>
 
             <div class="flex items-center justify-center space-x-2 mb-4">
@@ -127,7 +109,7 @@
                     class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors duration-200"
                 >
                     <span v-if="isProcessing">Memproses...</span>
-                    <span v-else>Crop & Kompres</span>
+                    <span v-else>Crop Gambar</span>
                 </button>
             </div>
         </div>
@@ -135,19 +117,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch } from 'vue';
 import VueCropper from 'vue-cropperjs';
-import imageCompression from 'browser-image-compression';
 
 interface Props {
     show: boolean;
     imageFile: File | null;
-    maxSize?: number; // in MB
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    maxSize: 2
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     close: [];
@@ -160,10 +138,8 @@ const showModal = ref(false);
 const cropper = ref<any>(null);
 const imageSrc = ref('');
 const aspectRatio = ref(16/9);
-const quality = ref(0.8);
 const isProcessing = ref(false);
 const originalSize = ref('');
-const compressionProgress = ref(0);
 const scaleX = ref(1);
 
 const formatFileSize = (bytes: number): string => {
@@ -212,60 +188,28 @@ const cropAndCompress = async () => {
     }
     
     isProcessing.value = true;
-    compressionProgress.value = 0;
 
     try {
-        // Get cropped canvas
-        const canvas = cropper.value.getCroppedCanvas({
-            width: 1200, // Max width
-            height: 1200, // Max height for square, will be adjusted based on aspect ratio
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high'
-        });
+        const canvas = cropper.value.getCroppedCanvas();
 
         if (!canvas) {
             throw new Error('Gagal membuat canvas dari crop area');
         }
 
-        // Convert canvas to blob
         const blob: Blob | null = await new Promise((resolve) => {
-            canvas.toBlob(resolve, 'image/jpeg', quality.value);
+            canvas.toBlob(resolve, props.imageFile?.type || 'image/png');
         });
 
         if (!blob) {
             throw new Error('Gagal mengkonversi canvas menjadi blob');
         }
 
-        compressionProgress.value = 30;
-
-        // Convert blob to file
-        let file = new File([blob], props.imageFile?.name || 'cropped-image.jpg', {
-            type: 'image/jpeg',
+        const file = new File([blob], props.imageFile?.name || 'cropped-image', {
+            type: props.imageFile?.type || 'image/png',
             lastModified: Date.now()
         });
 
-        compressionProgress.value = 50;
-
-        // Compress if file size exceeds maxSize
-        const maxSizeInBytes = props.maxSize * 1024 * 1024; // Convert MB to bytes
-        
-        if (file.size > maxSizeInBytes) {
-            const options = {
-                maxSizeMB: props.maxSize,
-                maxWidthOrHeight: 1920,
-                useWebWorker: true,
-                fileType: 'image/jpeg',
-                initialQuality: quality.value
-            };
-
-            file = await imageCompression(file, options);
-            compressionProgress.value = 90;
-        }
-
-        compressionProgress.value = 100;
-
-        // Emit the processed file
-        emit('success', 'Gambar berhasil dikompres dan di-crop!');
+        emit('success', 'Gambar berhasil di-crop!');
         emit('cropped', file);
         closeModal();
 
@@ -274,7 +218,6 @@ const cropAndCompress = async () => {
         emit('error', 'Terjadi kesalahan saat memproses gambar. Silakan coba lagi.');
     } finally {
         isProcessing.value = false;
-        compressionProgress.value = 0;
     }
 };
 
