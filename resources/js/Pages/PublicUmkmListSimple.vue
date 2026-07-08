@@ -114,23 +114,53 @@ const handleImageError = (event: Event) => {
 };
 
 // Pagination functions
-const normalizePaginationUrl = (url: string): string => {
+const extractPageNumber = (url: string | null): number | null => {
+    if (!url) return null;
+
     try {
-        // Always use relative URL so protocol/host follow current origin (safe for force HTTPS + proxy setups)
         const parsed = new URL(url, window.location.origin);
-        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        const page = Number(parsed.searchParams.get('page'));
+
+        if (Number.isInteger(page) && page > 0) {
+            return page;
+        }
     } catch {
-        return url;
+        return null;
     }
+
+    return null;
 };
 
-const goToPage = (url: string | null) => {
-    if (url) {
-        router.get(normalizePaginationUrl(url), {}, {
-            preserveState: true,
-            preserveScroll: true
-        });
+const pageFromLabel = (label: string): number | null => {
+    const plainLabel = label.replace(/<[^>]*>/g, '').trim();
+    const page = Number(plainLabel);
+
+    if (Number.isInteger(page) && page > 0) {
+        return page;
     }
+
+    return null;
+};
+
+const buildRelativePageUrl = (page: number): string => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', String(page));
+
+    const query = params.toString();
+    return query ? `${window.location.pathname}?${query}` : window.location.pathname;
+};
+
+const goToPage = (url: string | null, fallbackPage?: number) => {
+    const page = extractPageNumber(url) ?? fallbackPage;
+
+    if (!page || page < 1) {
+        return;
+    }
+
+    router.get(buildRelativePageUrl(page), {}, {
+        preserveState: true,
+        preserveScroll: true
+    });
 };
 
 const isSearching = computed(() => {
@@ -563,7 +593,7 @@ const paginationLinks = computed(() => {
                             <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2">
                                 <!-- Previous Button -->
                                 <button
-                                    @click="goToPage(umkms.prev_page_url)"
+                                    @click="goToPage(umkms.prev_page_url, umkms.current_page - 1)"
                                     :disabled="!umkms.prev_page_url"
                                     :class="[
                                         'inline-flex items-center px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap',
@@ -583,7 +613,7 @@ const paginationLinks = computed(() => {
                                     <template v-for="(link, index) in paginationLinks" :key="index">
                                         <button
                                             v-if="link.url && /^\d+$/.test(link.label.replace(/<[^>]*>/g, '').trim())"
-                                            @click="goToPage(link.url)"
+                                            @click="goToPage(link.url, pageFromLabel(link.label) ?? undefined)"
                                             :class="[
                                                 'min-w-[40px] h-10 px-3 rounded-lg text-sm font-medium transition-all duration-200',
                                                 link.active
@@ -607,7 +637,7 @@ const paginationLinks = computed(() => {
                                 
                                 <!-- Next Button -->
                                 <button
-                                    @click="goToPage(umkms.next_page_url)"
+                                    @click="goToPage(umkms.next_page_url, umkms.current_page + 1)"
                                     :disabled="!umkms.next_page_url"
                                     :class="[
                                         'inline-flex items-center px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap',
