@@ -114,9 +114,19 @@ const handleImageError = (event: Event) => {
 };
 
 // Pagination functions
+const normalizePaginationUrl = (url: string): string => {
+    try {
+        // Always use relative URL so protocol/host follow current origin (safe for force HTTPS + proxy setups)
+        const parsed = new URL(url, window.location.origin);
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+        return url;
+    }
+};
+
 const goToPage = (url: string | null) => {
     if (url) {
-        router.get(url, {}, {
+        router.get(normalizePaginationUrl(url), {}, {
             preserveState: true,
             preserveScroll: true
         });
